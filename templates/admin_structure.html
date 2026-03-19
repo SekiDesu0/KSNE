@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Estructura Operativa</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Gestión de Zonas</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('manage_structure') }}" class="mb-4">
+                    <input type="hidden" name="action" value="add_zona">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="zona_name" placeholder="Nombre de la Zona (ej: Norte)" required>
+                        <button class="btn btn-primary" type="submit">Agregar Zona</button>
+                    </div>
+                </form>
+
+                <table class="table table-sm table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nombre</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for zona in zonas %}
+                        <tr>
+                            <td class="align-middle">{{ zona[1] }}</td>
+                            <td class="text-end">
+                                <form action="{{ url_for('delete_structure', type='zona', id=zona[0]) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar esta Zona?');">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">No hay zonas registradas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Gestión de Módulos</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('manage_structure') }}" class="mb-4">
+                    <input type="hidden" name="action" value="add_modulo">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <select class="form-select" name="zona_id" required>
+                                <option value="" selected disabled>Seleccionar Zona...</option>
+                                {% for zona in zonas %}
+                                    <option value="{{ zona[0] }}">{{ zona[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" name="modulo_name" placeholder="Nombre del Módulo" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" type="submit">+</button>
+                        </div>
+                    </div>
+                </form>
+
+                <table class="table table-sm table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Módulo</th>
+                            <th>Zona</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for modulo in modulos %}
+                        <tr>
+                            <td class="align-middle">{{ modulo[1] }}</td>
+                            <td class="align-middle"><span class="badge bg-info text-dark">{{ modulo[2] }}</span></td>
+                            <td class="text-end">
+                                <form action="{{ url_for('delete_structure', type='modulo', id=modulo[0]) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar este Módulo?');">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No hay módulos registrados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

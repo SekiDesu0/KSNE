@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0">Iniciar Sesión</h4>
+            </div>
+            <div class="card-body p-4">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">RUT</label>
+                        <input type="text" class="form-control" name="rut" id="rutInput" placeholder="12.345.678-9" required autofocus>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('rutInput').addEventListener('input', function(e) {
+        let value = this.value.replace(/[^0-9kK]/g, '').toUpperCase();
+        if (value.length > 1) {
+            let body = value.slice(0, -1);
+            let dv = value.slice(-1);
+            body = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            this.value = `${body}-${dv}`;
+        } else {
+            this.value = value;
+        }
+    });
+</script>
+{% endblock %}

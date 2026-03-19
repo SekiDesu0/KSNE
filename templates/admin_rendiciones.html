@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Historial de Rendiciones</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Trabajador</th>
+                    <th>Módulo</th>
+                    <th>Turno</th>
+                    <th>Total Declarado</th>
+                    <th>Gastos</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rendiciones %}
+                <tr>
+                    <td class="align-middle">{{ r[1] }}</td>
+                    <td class="align-middle">{{ r[2] }}</td>
+                    <td class="align-middle"><span class="badge bg-info text-dark">{{ r[3] }}</span></td>
+                    <td class="align-middle">{{ r[4] }}</td>
+                    <td class="align-middle">${{ "{:,.0f}".format(r[5]).replace(',', '.') }}</td>
+                    <td class="align-middle text-danger">${{ "{:,.0f}".format(r[6]).replace(',', '.') }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('view_rendicion', id=r[0]) }}" class="btn btn-sm btn-primary">Ver Detalle</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Aún no hay rendiciones enviadas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
