@@ -290,7 +290,7 @@ def manage_workers():
                 flash("El RUT ya existe en el sistema.", "danger")
 
     # Fetch workers and JOIN their module name
-    c.execute('''SELECT w.id, w.rut, w.name, w.phone, m.name 
+    c.execute('''SELECT w.id, w.rut, w.name, w.phone, m.name, w.modulo_id 
                  FROM workers w 
                  LEFT JOIN modulos m ON w.modulo_id = m.id 
                  WHERE w.is_admin = 0''')
@@ -378,7 +378,8 @@ def admin_reset_password(id):
     conn.close()
     
     flash(f"Contraseña de {worker[0]} restablecida. La nueva contraseña es: <strong>{new_password}</strong>", "warning")
-    return redirect(url_for('edit_worker', id=id))
+    
+    return redirect(url_for('manage_workers'))
 
 
 @app.route('/admin/estructura', methods=['GET', 'POST'])

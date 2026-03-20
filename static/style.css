@@ -1,0 +1,12 @@
+
+[data-bs-theme="dark"] .form-control[readonly] {
+    background-color: #1a1d21; /* Un fondo casi negro, más oscuro que el modal */
+    border-color: #373b3e;     /* Un borde sutil */
+    color: #e3e6e8;             /* Texto blanco grisáceo, muy legible */
+    opacity: 1;                 /* Evita la opacidad predeterminada de Bootstrap */
+    cursor: not-allowed;        /* Refuerza visualmente que no es editable */
+}
+
+[data-bs-theme="dark"] .text-muted-rut {
+    color: #adb5bd !important; /* Un gris medio para el label "RUT (No editable)" */
+}
