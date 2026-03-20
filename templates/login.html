@@ -1,37 +1,48 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-5">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center py-3">
-                <h4 class="mb-0">Iniciar Sesión</h4>
-            </div>
-            <div class="card-body p-4">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    {% for category, message in messages %}
-                      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
+{% extends "macros/base.html" %}
 
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">RUT</label>
-                        <input type="text" class="form-control" name="rut" id="rutInput" placeholder="12.345.678-9" required autofocus>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-                </form>
+{% block title %}Inicio de sesión{% endblock %}
+
+{% block content %}
+    <div class="d-flex align-items-center justify-content-center vh-100">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0">Iniciar Sesión</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message|safe }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">RUT</label>
+                            <input type="text"
+                                   class="form-control"
+                                   name="rut"
+                                   id="rutInput"
+                                   placeholder="12.345.678-9"
+                                   required
+                                   autofocus>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+{% endblock %}
 
-<script>
+{% block scripts %}
+    <script>
     document.getElementById('rutInput').addEventListener('input', function(e) {
         let value = this.value.replace(/[^0-9kK]/g, '').toUpperCase();
         if (value.length > 1) {
@@ -43,5 +54,5 @@
             this.value = value;
         }
     });
-</script>
+    </script>
 {% endblock %}

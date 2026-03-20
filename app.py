@@ -9,7 +9,7 @@ from datetime import date
 
 app = Flask(__name__)
 app.secret_key = "super_secret_dev_key"
-DB_NAME = "rendiciones.db"
+DB_NAME = "db/rendiciones.db"
 
 # --- Database & Helpers ---
 
