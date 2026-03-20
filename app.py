@@ -127,7 +127,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('login'))
+            return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -136,14 +136,19 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session or not session.get('is_admin'):
             flash("Acceso denegado. Se requieren permisos de administrador.", "danger")
-            return redirect(url_for('login'))
+            return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
 
 # --- Routes ---
 
 @app.route('/', methods=['GET', 'POST'])
-def login():
+def index(): # Cambiado de 'login' a 'index'
+    if 'user_id' in session:
+        if session.get('is_admin'):
+            return redirect(url_for('admin_rendiciones'))
+        return redirect(url_for('worker_dashboard'))
+    
     if request.method == 'POST':
         raw_rut = request.form['rut']
         password = request.form['password']
@@ -174,7 +179,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
