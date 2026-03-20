@@ -21,7 +21,7 @@
 {{ edit_worker_modal(modulos) }}
 
 <div class="card mb-4">
-    <div class="card-header bg-secondary text-white">Agregar Nuevo Trabajador</div>
+    <div class="card-header bg-primary text-white">Agregar Nuevo Trabajador</div>
     <div class="card-body">
         <form method="POST" action="{{ url_for('manage_workers') }}">
             <div class="row g-3">
@@ -73,18 +73,19 @@
                     <td class="align-middle"><span class="badge bg-info text-dark">{{ worker[4] }}</span></td>
                     <td class="text-end">
                         <button type="button" 
-                                class="btn btn-sm btn-outline-info" 
+                                class="btn btn-primary btn-sm btn-edit-sm" 
                                 data-bs-toggle="modal" 
                                 data-bs-target="#editWorkerModal"
                                 data-id="{{ worker[0] }}"
                                 data-rut="{{ worker[1] }}"
                                 data-name="{{ worker[2] }}"
                                 data-phone="{{ worker[3] }}"
-                                data-modulo="{{ worker[5] }}"> Editar
+                                data-modulo="{{ worker[5] }}">
+                            <i class="bi bi-pencil"></i>
                         </button>
                         
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delWorker{{ worker[0] }}">
-                            Eliminar
+                        <button type="button" class="btn btn-danger btn-sm btn-del-sm" data-bs-toggle="modal" data-bs-target="#delWorker{{ worker[0] }}">
+                            <i class="bi bi-trash"></i>
                         </button>
 
                         {{ confirm_modal(

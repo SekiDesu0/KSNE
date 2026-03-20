@@ -27,7 +27,7 @@ services:
             - 5000:5000
         volumes:
             - YOUR_PATH/rendiciones/db:/app/db
-            - YOUR_PATH/serendicionesipos/static/cache:/app/static/cache
+            - YOUR_PATH/rendiciones/static/cache:/app/static/cache
         container_name: rendiciones-server
         image: rendiciones:latest
         restart: unless-stopped

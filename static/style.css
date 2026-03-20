@@ -10,3 +10,15 @@
 [data-bs-theme="dark"] .text-muted-rut {
     color: #adb5bd !important; /* Un gris medio para el label "RUT (No editable)" */
 }
+
+@media (max-width: 576px) {
+        .col-barcode {
+            display: none;
+        }
+
+        .btn-edit-sm,
+        .btn-del-sm {
+            padding: 4px 7px;
+            font-size: 0.75rem;
+        }
+    }

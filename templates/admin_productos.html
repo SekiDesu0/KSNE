@@ -21,7 +21,7 @@
 {{ edit_product_modal(zonas) }}
 
 <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-secondary text-white">Agregar Nuevo Producto</div>
+    <div class="card-header bg-primary text-white">Agregar Nuevo Producto</div>
     <div class="card-body">
         <form method="POST" action="{{ url_for('manage_products') }}">
             <div class="row g-3">
@@ -81,7 +81,7 @@
                     <td class="align-middle">${{ "{:,.0f}".format(prod[3]).replace(',', '.') }}</td>
                     <td class="text-end">
                         <button type="button" 
-                                class="btn btn-sm btn-outline-info" 
+                                class="btn btn-primary btn-sm btn-edit-sm" 
                                 data-bs-toggle="modal" 
                                 data-bs-target="#editProductModal"
                                 data-id="{{ prod[0] }}"
@@ -89,11 +89,11 @@
                                 data-price="{{ prod[2]|int }}"
                                 data-commission="{{ prod[3]|int }}"
                                 data-zona="{{ prod[5] }}">
-                            Editar
+                            <i class="bi bi-pencil"></i>
                         </button>
                         
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteProd{{ prod[0] }}">
-                            Eliminar
+                        <button type="button" class="btn btn-danger btn-sm btn-del-sm" data-bs-toggle="modal" data-bs-target="#deleteProd{{ prod[0] }}">
+                            <i class="bi bi-trash"></i>
                         </button>
 
                         {{ confirm_modal(
