@@ -1,4 +1,4 @@
-
+/* navbar */
 .navbar {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
@@ -13,46 +13,31 @@
     transition: color 0.2s ease-in-out;
 }
 
-/* Estilo para los elementos del dropdown al pasar el mouse */
-.dropdown-menu-dark .dropdown-menu-item {
-    color: #dee2e6;
-    text-decoration: none;
-    padding: 0.25rem 1rem;
-    display: block;
-    width: 100%;
-    clear: both;
-    font-weight: 400;
-    text-align: inherit;
-    white-space: nowrap;
-    background-color: transparent;
-    border: 0;
-    transition: background-color 0.15s ease-in-out;
+[data-bs-theme="light"] #theme-icon.bi-moon-stars {
+    color: #5856d6;
 }
 
-.dropdown-menu-dark .dropdown-menu-item:hover {
-    color: #fff;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+[data-bs-theme="dark"] #theme-icon.bi-sun {
+    color: #ffc107;
 }
 
-/* Separación de iconos en dropdowns */
-.dropdown-menu-item i {
-    width: 1.25rem;
-    text-align: center;
+#theme-switcher.nav-link {
+    color: inherit !important;
 }
 
+/* form edicion de trabajador */
 [data-bs-theme="dark"] .form-control[readonly] {
-    background-color: #1a1d21; /* Un fondo casi negro, más oscuro que el modal */
-    border-color: #373b3e;     /* Un borde sutil */
-    color: #e3e6e8;             /* Texto blanco grisáceo, muy legible */
-    opacity: 1;                 /* Evita la opacidad predeterminada de Bootstrap */
-    cursor: not-allowed;        /* Refuerza visualmente que no es editable */
+    background-color: #1a1d21;
+    border-color: #373b3e;    
+    color: #e3e6e8;           
+    opacity: 1;               
+    cursor: not-allowed;      
 }
 
 [data-bs-theme="dark"] .text-muted-rut {
     color: #adb5bd !important; /* Un gris medio para el label "RUT (No editable)" */
 }
-
+/* botones acciones */
 @media (max-width: 576px) {
     .col-barcode {
         display: none;
@@ -65,14 +50,22 @@
     }
 }
 
-[data-bs-theme="light"] #theme-icon.bi-moon-stars {
-    color: #5856d6; /* Un color índigo vibrante para que resalte en el fondo claro */
+/* fila calculo total dashboard trabajador */
+
+[data-bs-theme="dark"] .custom-total-row {
+    background-color: rgba(30, 41, 59, 0.7);
+    color: #f8fafc;
+    border-top: 2px solid #334155;
 }
 
-[data-bs-theme="dark"] #theme-icon.bi-sun {
-    color: #ffc107; /* Amarillo cálido de Bootstrap */
+[data-bs-theme="dark"] #total_productos_calc {
+    box-shadow: none;
+    outline: none;
+    text-align: right;
+    padding-right: 0;
 }
 
-#theme-switcher.nav-link {
-    color: inherit !important;
+.text-info {
+    color: #38bdf8 !important; /* Azul cielo moderno */
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
 }

@@ -1,4 +1,5 @@
 {% extends "macros/base.html" %}
+{% from 'macros/modals.html' import confirm_modal %}
 
 {% block title %}Rendición de Caja{% endblock %}
 
@@ -82,6 +83,21 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+
+                <!-- OPCIONAL -->
+                <tfoot class="table-group-divider">
+                    <tr class="custom-total-row fw-bold"> <td colspan="{% if has_commission %}3{% else %}2{% endif %}" class="text-end align-middle">
+                            Total Venta por Productos:
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text border-0 bg-transparent text-info">$</span>
+                                <input type="text" class="form-control border-0 bg-transparent text-info fw-bold fs-5" id="total_productos_calc" value="0" readonly>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+                <!-- OPCIONAL -->
             </table>
         </div>
     </div>
@@ -136,11 +152,90 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary w-100 py-3 mb-5" onclick="return confirm('¿Enviar rendición? Revisa bien las cantidades.');">Enviar Rendición Diaria</button>
+    <button type="button" class="btn btn-primary w-100 py-3 mb-5" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+        <i class="bi bi-send-check me-2"></i> Enviar Rendición Diaria
+    </button>
 </form>
+
+{{ confirm_modal(
+    id='confirmSubmitModal',
+    title='¿Enviar Rendición?',
+    message='Asegúrate de que todas las cantidades y montos ingresados sean correctos. Una vez enviada, no podrás editarla.',
+    action_url='#',
+    btn_class='btn-success',
+    btn_text='Sí, enviar ahora'
+) }}
 {% endblock %}
 
 {% block scripts %}
+<script>
+    const inputsCantidad = document.querySelectorAll('input[name^="qty_"]');
+    const displayTotalProductos = document.getElementById('total_productos_calc');
+
+    function calcularVentaProductos() {
+        let granTotal = 0;
+
+        // Buscamos todas las filas del cuerpo de la tabla
+        const filas = document.querySelectorAll('tbody tr');
+        
+        filas.forEach(fila => {
+            const inputQty = fila.querySelector('input[name^="qty_"]');
+            if (inputQty) {
+                const cantidad = parseInt(inputQty.value) || 0;
+                // Extraemos el precio del texto de la segunda celda (quitando '$' y '.')
+                const precioTexto = fila.cells[1].innerText.replace(/\D/g, '');
+                const precio = parseInt(precioTexto) || 0;
+                
+                granTotal += (cantidad * precio);
+            }
+        });
+
+        displayTotalProductos.value = granTotal.toLocaleString('es-CL');
+    }
+
+    // Escuchar cambios en las cantidades de productos
+    inputsCantidad.forEach(input => {
+        input.addEventListener('input', calcularVentaProductos);
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const submitModal = document.getElementById('confirmSubmitModal');
+    const mainForm = document.querySelector('form'); // El formulario de la rendición
+
+    // Buscamos el botón de confirmar dentro del modal
+    const confirmBtn = submitModal.querySelector('button[type="submit"]');
+    
+    // Cambiamos su comportamiento: que no haga el submit del form del modal, 
+    // sino del formulario principal
+    confirmBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Ejecutamos la validación manual antes de enviar
+        const requiredInputs = mainForm.querySelectorAll('[required]');
+        let valid = true;
+
+        requiredInputs.forEach(input => {
+            if (!input.value.trim()) {
+                input.classList.add('is-invalid');
+                valid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (valid) {
+            mainForm.submit();
+        } else {
+            // Si no es válido, cerramos el modal y avisamos
+            const modalInstance = bootstrap.Modal.getInstance(submitModal);
+            modalInstance.hide();
+            alert("Por favor, rellena todos los campos obligatorios antes de enviar.");
+        }
+    });
+});
+</script>
+
 <script>
     const inputsVenta = document.querySelectorAll('.sale-input');
     const displayDigital = document.getElementById('total_digital');
