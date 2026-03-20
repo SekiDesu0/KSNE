@@ -140,6 +140,13 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 # --- Routes ---
 
 @app.route('/', methods=['GET', 'POST'])
@@ -187,7 +194,7 @@ def worker_dashboard():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    # 1. Identify the worker and their assigned location
+    # 1. Identificar al trabajador y su zona asignada
     c.execute('''SELECT w.modulo_id, m.name, z.id, z.name 
                  FROM workers w 
                  JOIN modulos m ON w.modulo_id = m.id 
@@ -201,35 +208,49 @@ def worker_dashboard():
 
     modulo_id, modulo_name, zona_id, zona_name = worker_info
 
-    # 2. Handle form submission
+    # 2. Manejo del envío del formulario
     if request.method == 'POST':
         fecha = request.form.get('fecha')
         turno = request.form.get('turno')
         
-        # Clean the money inputs (strip dots)
-        def clean_money(val):
-            return int(val.replace('.', '')) if val else 0
-            
-        tarjeta = clean_money(request.form.get('venta_tarjeta'))
-        mp = clean_money(request.form.get('venta_mp'))
-        efectivo = clean_money(request.form.get('venta_efectivo'))
-        gastos = clean_money(request.form.get('gastos'))
+        # Función para limpiar puntos y validar presencia de datos
+        def clean_and_validate(val):
+            if val is None or val.strip() == "":
+                return None
+            try:
+                return int(val.replace('.', ''))
+            except ValueError:
+                return None
+
+        # Captura y validación de campos obligatorios
+        tarjeta = clean_and_validate(request.form.get('venta_tarjeta'))
+        mp = clean_and_validate(request.form.get('venta_mp'))
+        efectivo = clean_and_validate(request.form.get('venta_efectivo'))
+        gastos = clean_and_validate(request.form.get('gastos')) or 0
         obs = request.form.get('observaciones', '').strip()
 
-        # Insert Header
+        # VERIFICACIÓN: Todos los campos de venta deben estar rellenos
+        if tarjeta is None or mp is None or efectivo is None or not fecha or not turno:
+            flash("Error: Todos los campos (Fecha, Turno, Tarjeta, MP y Efectivo) son obligatorios. Use 0 si no hubo ventas.", "danger")
+            return redirect(url_for('worker_dashboard'))
+
+        # CÁLCULOS ADICIONALES (Para lógica de negocio o auditoría futura)
+        total_digital = tarjeta + mp
+        total_ventas_general = total_digital + efectivo
+
+        # Insertar Cabecera de Rendición
         c.execute('''INSERT INTO rendiciones 
                      (worker_id, modulo_id, fecha, turno, venta_tarjeta, venta_mp, venta_efectivo, gastos, observaciones) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                   (session['user_id'], modulo_id, fecha, turno, tarjeta, mp, efectivo, gastos, obs))
         rendicion_id = c.lastrowid
 
-        # Insert Products (Only those with a quantity > 0)
+        # Insertar Productos (Solo aquellos con cantidad > 0)
         for key, value in request.form.items():
             if key.startswith('qty_') and value and int(value) > 0:
                 prod_id = int(key.split('_')[1])
                 cantidad = int(value)
                 
-                # Fetch current price/commission to snapshot it
                 c.execute("SELECT price, commission FROM productos WHERE id = ?", (prod_id,))
                 prod_data = c.fetchone()
                 
@@ -240,15 +261,14 @@ def worker_dashboard():
                               (rendicion_id, prod_id, cantidad, prod_data[0], prod_data[1]))
 
         conn.commit()
-        flash("Rendición enviada exitosamente.", "success")
+        flash(f"Rendición enviada exitosamente. Total General Declarado: ${total_ventas_general:,}".replace(',', '.'), "success")
         return redirect(url_for('worker_dashboard'))
 
-    # 3. Load Products for the GET request
+    # 3. Cargar Productos para la solicitud GET
     c.execute("SELECT id, name, price, commission FROM productos WHERE zona_id = ? ORDER BY name", (zona_id,))
     productos = c.fetchall()
     conn.close()
 
-    # Determine if this module uses commissions (Peppermint) or not (Candy)
     has_commission = any(prod[3] > 0 for prod in productos)
 
     return render_template('worker_dashboard.html', 
@@ -257,7 +277,7 @@ def worker_dashboard():
                            productos=productos,
                            has_commission=has_commission,
                            today=date.today().strftime('%Y-%m-%d'))
-
+                           
 @app.route('/admin/workers', methods=['GET', 'POST'])
 @admin_required
 def manage_workers():

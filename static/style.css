@@ -54,13 +54,25 @@
 }
 
 @media (max-width: 576px) {
-        .col-barcode {
-            display: none;
-        }
-
-        .btn-edit-sm,
-        .btn-del-sm {
-            padding: 4px 7px;
-            font-size: 0.75rem;
-        }
+    .col-barcode {
+        display: none;
     }
+
+    .btn-edit-sm,
+    .btn-del-sm {
+        padding: 4px 7px;
+        font-size: 0.75rem;
+    }
+}
+
+[data-bs-theme="light"] #theme-icon.bi-moon-stars {
+    color: #5856d6; /* Un color índigo vibrante para que resalte en el fondo claro */
+}
+
+[data-bs-theme="dark"] #theme-icon.bi-sun {
+    color: #ffc107; /* Amarillo cálido de Bootstrap */
+}
+
+#theme-switcher.nav-link {
+    color: inherit !important;
+}

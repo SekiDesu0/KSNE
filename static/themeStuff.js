@@ -4,13 +4,9 @@ function applyTheme(t) {
     
     const isDark = (t === 'dark');
     const themeIcon = document.getElementById('theme-icon');
-    const themeLabel = document.getElementById('theme-label');
 
     if (themeIcon) {
-        themeIcon.className = isDark ? 'bi bi-sun me-2' : 'bi bi-moon-stars me-2';
-    }
-    if (themeLabel) {
-        themeLabel.innerText = isDark ? 'Modo Claro' : 'Modo Oscuro';
+        themeIcon.className = isDark ? 'bi bi-sun fs-5' : 'bi bi-moon-stars fs-5';
     }
 }
 

@@ -40,8 +40,6 @@ services:
 
 # TODO peppermint:
 ## formulario
-- añadir total ventas (todos los medios de pago)
-- total tarjetas + mp
 - cantidad de boletas por metodod de pago
 - añadir segunda persona a cargo
 - verificar que todos los campos esten rellenos

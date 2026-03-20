@@ -1,12 +1,14 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm border-bottom border-secondary mb-4">
+<nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm border-bottom mb-4">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center fw-bold text-info" href="{{ url_for('index') }}">
-            <i class="bi bi-receipt-cutoff me-2 fs-4"></i>
+        <a class="navbar-brand d-flex align-items-center fw-bold text-primary-emphasis" href="{{ url_for('index') }}">
+            <i class="bi bi-receipt-cutoff me-2 fs-4 text-info"></i>
             <span>SekiPOS</span>
         </a>
+        
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navbarNav">
             {% if session.get('user_id') %}
                 <ul class="navbar-nav me-auto">
@@ -41,17 +43,16 @@
                 </ul>
                 
                 <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-link nav-link p-2 border-0" id="themeSwitcher" onclick="toggleTheme()" title="Cambiar tema">
-                        <i id="theme-icon" class="bi bi-sun-fill fs-5 text-warning"></i>
+                    <button class="btn btn-link nav-link p-2 border-0" onclick="toggleTheme()" title="Cambiar tema">
+                        <i id="theme-icon" class="bi bi-sun fs-5"></i>
                     </button>
-
-                    <span class="navbar-text text-light d-none d-md-block border-start ps-3 border-secondary">
-                        <i class="bi bi-person-badge me-1 text-info"></i>
-                        <span class="fw-bold">{{ session.get('rut') }}</span>
+                    
+                    <span class="navbar-text d-none d-md-block border-start ps-3 border-secondary-subtle">
+                        <i class="bi bi-person-circle me-1 text-info"></i> {{ session.get('rut') }}
                     </span>
 
                     <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
-                        <i class="bi bi-box-arrow-right me-1"></i> Salir
+                        Salir
                     </a>
                 </div>
             {% endif %}

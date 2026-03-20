@@ -1,6 +1,5 @@
 {% extends "macros/base.html" %}
 
-
 {% block title %}Rendición de Caja{% endblock %}
 
 {% block head %}
@@ -90,33 +89,43 @@
     <div class="card mb-4 shadow-sm border-info">
         <div class="card-header bg-info text-dark">Resumen Financiero</div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Total Tarjetas (Crédito/Débito)</label>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Venta Tarjeta</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input" name="venta_tarjeta" placeholder="0">
+                        <input type="text" class="form-control money-input sale-input" name="venta_tarjeta" id="venta_tarjeta" required>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Total Mercado Pago</label>
+                <div class="col-md-4">
+                    <label class="form-label">Venta Mercado Pago</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input" name="venta_mp" placeholder="0">
+                        <input type="text" class="form-control money-input sale-input" name="venta_mp" id="venta_mp" required>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Total Efectivo</label>
+                <div class="col-md-4">
+                    <label class="form-label">Venta Efectivo</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input" name="venta_efectivo" placeholder="0">
+                        <input type="text" class="form-control money-input sale-input" name="venta_efectivo" id="venta_efectivo" required>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Gastos del Módulo</label>
+            </div>
+
+            <div class="row g-3 mb-4 p-3 bg-body-secondary rounded shadow-sm">
+                <div class="col-md-6">
+                    <label class="form-label text-info fw-bold">Total Digital (Tarjeta + MP)</label>
                     <div class="input-group">
-                        <span class="input-group-text text-danger">-$</span>
-                        <input type="text" class="form-control money-input" name="gastos" placeholder="0">
+                        <span class="input-group-text bg-info text-white border-info">$</span>
+                        <input type="text" class="form-control bg-dark-subtle fw-bold" id="total_digital" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-success fw-bold">Total Ventas (Todos los medios)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-success text-white border-success">$</span>
+                        <input type="text" class="form-control bg-dark-subtle fw-bold" id="total_general" readonly>
                     </div>
                 </div>
             </div>
@@ -129,8 +138,54 @@
 
     <button type="submit" class="btn btn-primary w-100 py-3 mb-5" onclick="return confirm('¿Enviar rendición? Revisa bien las cantidades.');">Enviar Rendición Diaria</button>
 </form>
+{% endblock %}
 
+{% block scripts %}
 <script>
+    const inputsVenta = document.querySelectorAll('.sale-input');
+    const displayDigital = document.getElementById('total_digital');
+    const displayGeneral = document.getElementById('total_general');
+
+    function calcularTotales() {
+        // Limpiamos los puntos para sumar números puros
+        const getVal = (id) => parseInt(document.getElementById(id).value.replace(/\D/g, '')) || 0;
+
+        const tarjeta = getVal('venta_tarjeta');
+        const mp = getVal('venta_mp');
+        const efectivo = getVal('venta_efectivo');
+
+        const totalDigital = tarjeta + mp;
+        const totalGeneral = totalDigital + efectivo;
+
+        // Formateamos de vuelta a moneda chilena para mostrar
+        displayDigital.value = totalDigital.toLocaleString('es-CL');
+        displayGeneral.value = totalGeneral.toLocaleString('es-CL');
+    }
+
+    inputsVenta.forEach(input => {
+        input.addEventListener('input', calcularTotales);
+    });
+
+    // Validación antes de enviar el formulario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const requiredInputs = this.querySelectorAll('[required]');
+        let valid = true;
+
+        requiredInputs.forEach(input => {
+            if (!input.value.trim()) {
+                input.classList.add('is-invalid');
+                valid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
+            alert("Por favor, rellena todos los campos obligatorios antes de enviar.");
+        }
+    });
+
     // Reuse our formatting script for the summary money inputs
     document.querySelectorAll('.money-input').forEach(function(input) {
         input.addEventListener('input', function(e) {
