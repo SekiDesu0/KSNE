@@ -489,7 +489,7 @@ def manage_products():
     c.execute("SELECT id, name FROM zonas ORDER BY name")
     zonas = c.fetchall()
 
-    c.execute('''SELECT p.id, p.name, p.price, p.commission, z.name 
+    c.execute('''SELECT p.id, p.name, p.price, p.commission, z.name, p.zona_id 
                  FROM productos p
                  JOIN zonas z ON p.zona_id = z.id
                  ORDER BY z.name, p.name''')

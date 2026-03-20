@@ -1,0 +1,64 @@
+{% macro confirm_modal(id, title, message, action_url, btn_class='btn-primary', btn_text='Confirmar') %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{ message }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ action_url }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn {{ btn_class }}">{{ btn_text }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro edit_product_modal(zonas) %}
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editProductForm" method="POST" action="">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Zona</label>
+                        <select class="form-select" name="zona_id" id="edit_zona_id" required>
+                            {% for zona in zonas %}
+                                <option value="{{ zona[0] }}">{{ zona[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Producto</label>
+                        <input type="text" class="form-control" name="name" id="edit_name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Precio</label>
+                            <input type="text" class="form-control money-input" name="price" id="edit_price" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Comisión</label>
+                            <input type="text" class="form-control money-input" name="commission" id="edit_commission" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
