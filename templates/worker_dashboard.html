@@ -202,47 +202,44 @@
 
     function calcularVentaProductos() {
         let granTotal = 0;
-
         const filas = document.querySelectorAll('tbody tr');
         
         filas.forEach(fila => {
             const inputQty = fila.querySelector('input[name^="qty_"]');
             if (inputQty) {
-                // Prevenir valores negativos visualmente
                 if (parseInt(inputQty.value) < 0) {
                     inputQty.value = 0;
                 }
-                
                 const cantidad = parseInt(inputQty.value) || 0;
                 const precioTexto = fila.cells[1].innerText.replace(/\D/g, '');
                 const precio = parseInt(precioTexto) || 0;
-                
                 granTotal += (cantidad * precio);
             }
         });
-
         displayTotalProductos.value = granTotal.toLocaleString('es-CL');
     }
 
     inputsCantidad.forEach(input => {
-        // Bloquear tecla "-" y signos negativos
         input.addEventListener('keydown', function(e) {
-            if (e.key === '-' || e.key === 'Subtract') {
+            if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'].includes(e.key) || e.ctrlKey || e.metaKey) return;
+            if (e.key < '0' || e.key > '9') {
                 e.preventDefault();
             }
         });
         
-        // Recalcular y validar al ingresar datos
-        input.addEventListener('input', calcularVentaProductos);
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+            calcularVentaProductos();
+        });
     });
 </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const submitModal = document.getElementById('confirmSubmitModal');
     const mainForm = document.querySelector('form');
     const alertModalEl = document.getElementById('globalAlertModal');
     const alertModal = new bootstrap.Modal(alertModalEl);
-    
     const confirmBtn = submitModal.querySelector('button[type="submit"]');
 
     function mostrarError(mensaje) {
@@ -256,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         requiredInputs.forEach(input => {
             const isMoney = input.classList.contains('money-input');
-            // Validamos solo si está vacío y NO es un campo de dinero (que ya tiene '0')
             if (!input.value.trim() || (isMoney && input.value === '')) { 
                 input.classList.add('is-invalid');
                 valid = false;
@@ -269,17 +265,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     confirmBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        
         if (validarFormulario()) {
             mainForm.submit();
         } else {
-            // Cerramos el modal de confirmación antes de mostrar el de error
             bootstrap.Modal.getInstance(submitModal).hide();
             mostrarError("Por favor, rellena los campos obligatorios (Fecha y Turno) antes de enviar.");
         }
     });
 
-    // Inicializar campos de dinero en 0 para que no se queje la validación
     document.querySelectorAll('.money-input').forEach(input => {
         if (!input.value.trim()) input.value = '0';
     });
@@ -294,7 +287,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function calcularTotales() {
         const getVal = (id) => {
             const el = document.getElementById(id);
-            // Si no hay valor, asumimos 0 para que el cálculo no de NaN
             if (!el || !el.value.trim() || el.value === '0') return 0; 
             return parseInt(el.value.replace(/\D/g, '')) || 0;
         };
@@ -316,14 +308,12 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', calcularTotales);
     });
 
-    // Validación antes de enviar el formulario
     document.querySelector('form').addEventListener('submit', function(e) {
         const requiredInputs = this.querySelectorAll('[required]');
         let valid = true;
 
         requiredInputs.forEach(input => {
             const isMoney = input.classList.contains('money-input');
-            // Si está vacío y no es campo de dinero (o el campo de dinero está totalmente vacío)
             if (!input.value.trim() || (isMoney && input.value === '')) { 
                 input.classList.add('is-invalid');
                 valid = false;
@@ -334,21 +324,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!valid) {
             e.preventDefault();
-            
-            // Usamos la función del modal bonito en lugar del alert
             const alertModalEl = document.getElementById('globalAlertModal');
             if (alertModalEl) {
                 const alertModal = bootstrap.Modal.getOrCreateInstance(alertModalEl);
                 document.getElementById('globalAlertModalBody').textContent = "Por favor, rellena todos los campos obligatorios antes de enviar.";
                 alertModal.show();
             } else {
-                // Respaldo por si el modal no carga por alguna razón mística
                 alert("Por favor, rellena todos los campos obligatorios.");
             }
         }
     });
 
     document.querySelectorAll('.money-input').forEach(function(input) {
+        input.addEventListener('keydown', function(e) {
+            if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'].includes(e.key) || e.ctrlKey || e.metaKey) return;
+            if (e.key < '0' || e.key > '9') {
+                e.preventDefault();
+            }
+        });
+
         input.addEventListener('focus', function() {
             if (this.value === '0') this.value = '';
         });
