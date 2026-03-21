@@ -588,20 +588,44 @@ def admin_rendiciones():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # Fetch all rendiciones, newest first
+    # 1. Obtenemos la cabecera exacta igual que en view_rendicion (Índices 0 al 10)
     c.execute('''
         SELECT r.id, r.fecha, w.name, m.name, r.turno,
-               (r.venta_tarjeta + r.venta_mp + r.venta_efectivo) as total_declarado,
-               r.gastos
+            r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
+            c_w.name
         FROM rendiciones r
         JOIN workers w ON r.worker_id = w.id
         JOIN modulos m ON r.modulo_id = m.id
+        LEFT JOIN workers c_w ON r.companion_id = c_w.id
         ORDER BY r.fecha DESC, r.id DESC
     ''')
-    rendiciones = c.fetchall()
+    rendiciones_basicas = c.fetchall()
+
+    rendiciones_completas = []
+
+    # 2. Por cada rendición, buscamos sus ítems y calculamos los totales
+    for r in rendiciones_basicas:
+        c.execute('''
+            SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
+                   (ri.cantidad * ri.precio_historico) as total_linea,
+                   (ri.cantidad * ri.comision_historica) as total_comision
+            FROM rendicion_items ri
+            JOIN productos p ON ri.producto_id = p.id
+            WHERE ri.rendicion_id = ?
+        ''', (r[0],))
+        items = c.fetchall()
+
+        total_calculado = sum(item[4] for item in items)
+        comision_total = sum(item[5] for item in items)
+
+        # 3. Anexamos los nuevos datos a la tupla original
+        # r[11] = items, r[12] = total_calculado, r[13] = comision_total
+        r_completa = r + (items, total_calculado, comision_total)
+        rendiciones_completas.append(r_completa)
+
     conn.close()
     
-    return render_template('admin_rendiciones.html', rendiciones=rendiciones)
+    return render_template('admin_rendiciones.html', rendiciones=rendiciones_completas)
 
 @app.route('/admin/rendiciones/<int:id>')
 @admin_required

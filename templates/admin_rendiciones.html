@@ -1,5 +1,5 @@
 {% extends "macros/base.html" %}
-{% from 'macros/modals.html' import view_rendicion_modal %}
+{% from 'macros/modals.html' import rendicion_detail_modal %}
 
 {% block title %}Historial de Rendiciones{% endblock %}
 
@@ -8,8 +8,6 @@
 
 {% block content %}
 <h2 class="mb-4">Historial de Rendiciones</h2>
-
-{{ view_rendicion_modal() }}
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
@@ -32,17 +30,17 @@
                     <td class="align-middle">{{ r[2] }}</td>
                     <td class="align-middle"><span class="badge bg-info text-dark">{{ r[3] }}</span></td>
                     <td class="align-middle">{{ r[4] }}</td>
-                    <td class="align-middle">${{ "{:,.0f}".format(r[5]).replace(',', '.') }}</td>
-                    <td class="align-middle text-danger">${{ "{:,.0f}".format(r[6]).replace(',', '.') }}</td>
+                    <td class="align-middle">${{ "{:,.0f}".format((r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}</td>
+                    <td class="align-middle text-danger">${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}</td>
                     <td class="text-end">
                         <button type="button" 
                                 class="btn btn-sm btn-primary" 
                                 data-bs-toggle="modal" 
-                                data-bs-target="#viewRendicionModal"
-                                data-url="{{ url_for('view_rendicion', id=r[0]) }}"
-                                data-id="{{ r[0] }}">
+                                data-bs-target="#viewRendicion{{ r[0] }}">
                             Ver Detalle
                         </button>
+                        
+                        {{ rendicion_detail_modal(r, r[11], r[12], r[13]) }}
                     </td>
                 </tr>
                 {% else %}
@@ -54,35 +52,4 @@
         </table>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    const viewModal = document.getElementById('viewRendicionModal');
-    if (viewModal) {
-        viewModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const url = button.getAttribute('data-url');
-            const id = button.getAttribute('data-id');
-            
-            const title = viewModal.querySelector('#rendicionModalTitle');
-            const body = viewModal.querySelector('#rendicionModalBody');
-            
-            title.textContent = `Detalle de Rendición #${id}`;
-            body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
-            
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const content = doc.querySelector('.row').outerHTML;
-                    body.innerHTML = content;
-                })
-                .catch(err => {
-                    body.innerHTML = '<div class="alert alert-danger">Error al cargar los detalles.</div>';
-                });
-        });
-    }
-</script>
 {% endblock %}
