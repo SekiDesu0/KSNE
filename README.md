@@ -45,6 +45,9 @@ services:
 - formulario de perdidas en el dashboard(?) o hub
 - categorias de productos (complementos, etc)
 
+# TODO quizas:
+- generar reportes(?)
+
 # TODO peppermint:
 ## formulario
 - cantidad de boletas por metodo de pago
