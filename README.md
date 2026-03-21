@@ -36,7 +36,8 @@ services:
 # TODO general:
 - separar productos para tiendas
 - limpiar requirements.txt
-
+- hacer que trabajador acompañante solo muestre trabajadores en el mismo modulo
+- hacer placeholders funcionales (si dice 0 que el sistema lea 0 no null)
 # TODO peppermint:
 ## formulario
 - cantidad de boletas por metodo de pago

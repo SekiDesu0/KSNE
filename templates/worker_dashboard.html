@@ -138,15 +138,22 @@
             </div>
 
             <div class="row g-3 mb-4 p-3 bg-body-secondary rounded shadow-sm">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label text-info fw-bold">Total Digital (Tarjeta + MP)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-info text-white border-info">$</span>
                         <input type="text" class="form-control bg-dark-subtle fw-bold" placeholder="0" id="total_digital" readonly>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label text-success fw-bold">Total Ventas (Todos los medios)</label>
+                <div class="col-md-4">
+                    <label class="form-label text-danger fw-bold">Gastos del Módulo</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-danger text-white border-danger">-$</span>
+                        <input type="text" class="form-control money-input sale-input" name="gastos" id="gastos" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-success fw-bold">Total Ventas (Neto)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-success text-white border-success">$</span>
                         <input type="text" class="form-control bg-dark-subtle fw-bold" placeholder="0" id="total_general" readonly>
@@ -251,16 +258,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function calcularTotales() {
         // Limpiamos los puntos para sumar números puros
-        const getVal = (id) => parseInt(document.getElementById(id).value.replace(/\D/g, '')) || 0;
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? parseInt(el.value.replace(/\D/g, '')) || 0 : 0;
+        };
 
         const tarjeta = getVal('venta_tarjeta');
         const mp = getVal('venta_mp');
         const efectivo = getVal('venta_efectivo');
+        const gastos = getVal('gastos'); // Nuevo campo capturado
 
         const totalDigital = tarjeta + mp;
-        const totalGeneral = totalDigital + efectivo;
+        // El total general ahora resta los gastos para mostrar el neto real
+        const totalGeneral = (totalDigital + efectivo) - gastos;
 
-        // Formateamos de vuelta a moneda chilena para mostrar
+        // Formateamos de vuelta a moneda chilena
         displayDigital.value = totalDigital.toLocaleString('es-CL');
         displayGeneral.value = totalGeneral.toLocaleString('es-CL');
     }

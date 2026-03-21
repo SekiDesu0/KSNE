@@ -99,11 +99,12 @@
                 <hr>
                 
                 <div class="d-grid">
-                    <form id="resetPasswordForm" method="POST" action="" onsubmit="return confirm('¿Generar nueva contraseña?');">
-                        <button type="submit" class="btn btn-outline-warning btn-sm w-100">
-                            <i class="bi bi-key me-1"></i> Restablecer Contraseña
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-outline-warning btn-sm w-100" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#confirmResetPass"
+                            data-bs-dismiss="modal"> {# Esto cierra el de edición al abrir el de confirmación #}
+                        <i class="bi bi-key me-1"></i> Restablecer Contraseña
+                    </button>
                     <small class="text-muted text-center mt-1">Generará una nueva clave aleatoria.</small>
                 </div>
             </div>

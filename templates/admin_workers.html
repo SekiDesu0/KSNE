@@ -106,29 +106,60 @@
         </table>
     </div>
 </div>
+
+{{ confirm_modal(
+    id='confirmResetPass',
+    title='Restablecer Contraseña',
+    message='¿Estás seguro de generar una nueva contraseña? La anterior dejará de funcionar inmediatamente.',
+    action_url='#',
+    btn_class='btn-warning',
+    btn_text='Generar Nueva Clave'
+) }}
 {% endblock %}
 {% block scripts %}
 
 <script>
     const editWorkerModal = document.getElementById('editWorkerModal');
+    const confirmResetModal = document.getElementById('confirmResetPass');
+
     if (editWorkerModal) {
         editWorkerModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
             
-            // IMPORTANTE: Definir las rutas correctamente
-            const editForm = editWorkerModal.querySelector('#editWorkerForm');
-            const resetForm = editWorkerModal.querySelector('#resetPasswordForm');
-            
-            editForm.action = "/admin/workers/edit/" + id;
-            resetForm.action = "/admin/workers/reset_password/" + id;
+            // Si el modal se abre desde el botón "Editar" de la tabla
+            if (button && button.hasAttribute('data-id')) {
+                const id = button.getAttribute('data-id');
+                const name = button.getAttribute('data-name');
+                
+                const editForm = editWorkerModal.querySelector('#editWorkerForm');
+                const resetForm = confirmResetModal.querySelector('form');
+                
+                editForm.action = "/admin/workers/edit/" + id;
+                resetForm.action = "/admin/workers/reset_password/" + id;
 
-            // Rellenar campos
-            editWorkerModal.querySelector('#edit_worker_rut').value = button.getAttribute('data-rut');
-            editWorkerModal.querySelector('#edit_worker_name').value = button.getAttribute('data-name');
-            editWorkerModal.querySelector('#edit_worker_phone').value = button.getAttribute('data-phone');
-            editWorkerModal.querySelector('#edit_worker_modulo').value = button.getAttribute('data-modulo');
+                confirmResetModal.querySelector('.modal-body').textContent = `¿Estás seguro de generar una nueva contraseña para ${name}? La anterior dejará de funcionar.`;
+
+                editWorkerModal.querySelector('#edit_worker_rut').value = button.getAttribute('data-rut');
+                editWorkerModal.querySelector('#edit_worker_name').value = name;
+                editWorkerModal.querySelector('#edit_worker_phone').value = button.getAttribute('data-phone');
+                editWorkerModal.querySelector('#edit_worker_modulo').value = button.getAttribute('data-modulo');
+            }
         });
+    }
+
+    // Lógica para reabrir el modal de edición al cancelar el de confirmación
+    if (confirmResetModal) {
+        // Buscamos el botón de cancelar dentro del modal de confirmación
+        const btnCancelar = confirmResetModal.querySelector('.btn-secondary');
+        const btnCerrarX = confirmResetModal.querySelector('.btn-close');
+
+        const reabrirEdicion = () => {
+            const modalEdicion = new bootstrap.Modal(editWorkerModal);
+            modalEdicion.show();
+        };
+
+        btnCancelar.addEventListener('click', reabrirEdicion);
+        btnCerrarX.addEventListener('click', reabrirEdicion);
     }
 
     document.getElementById('rutInput').addEventListener('input', function(e) {

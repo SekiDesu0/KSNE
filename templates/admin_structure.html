@@ -1,11 +1,7 @@
 {% extends "macros/base.html" %}
-
+{% import "macros/modals.html" as modals %}
 
 {% block title %}Estructura Operativa{% endblock %}
-
-{% block head %}
-<!-- HEAD -->
-{% endblock %}
 
 {% block content %}
 <h2 class="mb-4">Estructura Operativa</h2>
@@ -45,9 +41,22 @@
                         <tr>
                             <td class="align-middle">{{ zona[1] }}</td>
                             <td class="text-end">
-                                <form action="{{ url_for('delete_structure', type='zona', id=zona[0]) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar esta Zona?');">Eliminar</button>
-                                </form>
+                                {# Botón que dispara el modal de confirmación #}
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteZona{{ zona[0] }}">
+                                    Eliminar
+                                </button>
+                                
+                                {# Llamada a la macro para generar el modal de esta zona específica #}
+                                {{ modals.confirm_modal(
+                                    'deleteZona' ~ zona[0], 
+                                    'Eliminar Zona', 
+                                    '¿Estás seguro de eliminar la zona "' ~ zona[1] ~ '"? Esto podría afectar a los módulos asociados.', 
+                                    url_for('delete_structure', type='zona', id=zona[0]),
+                                    'btn-danger',
+                                    'Eliminar'
+                                ) }}
                             </td>
                         </tr>
                         {% else %}
@@ -82,7 +91,7 @@
                             <input type="text" class="form-control" name="modulo_name" placeholder="Nombre del Módulo" required>
                         </div>
                         <div class="col-md-2">
-                            <button class="btn btn-primary w-100" type="submit">+</button>
+                            <button class="btn btn-primary w-100" type="submit">Agregar</button>
                         </div>
                     </div>
                 </form>
@@ -101,9 +110,22 @@
                             <td class="align-middle">{{ modulo[1] }}</td>
                             <td class="align-middle"><span class="badge bg-info text-dark">{{ modulo[2] }}</span></td>
                             <td class="text-end">
-                                <form action="{{ url_for('delete_structure', type='modulo', id=modulo[0]) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar este Módulo?');">Eliminar</button>
-                                </form>
+                                {# Botón que dispara el modal de confirmación #}
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModulo{{ modulo[0] }}">
+                                    Eliminar
+                                </button>
+
+                                {# Llamada a la macro para el módulo #}
+                                {{ modals.confirm_modal(
+                                    'deleteModulo' ~ modulo[0], 
+                                    'Eliminar Módulo', 
+                                    '¿Deseas eliminar el módulo "' ~ modulo[1] ~ '"?', 
+                                    url_for('delete_structure', type='modulo', id=modulo[0]),
+                                    'btn-danger',
+                                    'Eliminar'
+                                ) }}
                             </td>
                         </tr>
                         {% else %}
