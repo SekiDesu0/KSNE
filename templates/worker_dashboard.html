@@ -203,14 +203,17 @@
     function calcularVentaProductos() {
         let granTotal = 0;
 
-        // Buscamos todas las filas del cuerpo de la tabla
         const filas = document.querySelectorAll('tbody tr');
         
         filas.forEach(fila => {
             const inputQty = fila.querySelector('input[name^="qty_"]');
             if (inputQty) {
+                // Prevenir valores negativos visualmente
+                if (parseInt(inputQty.value) < 0) {
+                    inputQty.value = 0;
+                }
+                
                 const cantidad = parseInt(inputQty.value) || 0;
-                // Extraemos el precio del texto de la segunda celda (quitando '$' y '.')
                 const precioTexto = fila.cells[1].innerText.replace(/\D/g, '');
                 const precio = parseInt(precioTexto) || 0;
                 
@@ -221,8 +224,15 @@
         displayTotalProductos.value = granTotal.toLocaleString('es-CL');
     }
 
-    // Escuchar cambios en las cantidades de productos
     inputsCantidad.forEach(input => {
+        // Bloquear tecla "-" y signos negativos
+        input.addEventListener('keydown', function(e) {
+            if (e.key === '-' || e.key === 'Subtract') {
+                e.preventDefault();
+            }
+        });
+        
+        // Recalcular y validar al ingresar datos
         input.addEventListener('input', calcularVentaProductos);
     });
 </script>
