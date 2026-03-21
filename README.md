@@ -45,6 +45,7 @@ services:
 - formulario de perdidas en el dashboard(?) o hub
 - categorias de productos (complementos, etc)
 - precio de prodcot por zona
+- proteccion contra borrado de zonas o modulos i ya estan asignados a algo
 
 # TODO quizas:
 - generar reportes(?)

@@ -13,6 +13,76 @@ DB_NAME = "db/rendiciones.db"
 
 # --- Database & Helpers ---
 
+def populateDefaults():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    c.execute("SELECT COUNT(*) FROM zonas")
+    if c.fetchone()[0] == 0:
+        zonas = ['Norte', 'Quinta', 'RM', 'Sur']
+        for zona in zonas:
+            c.execute("INSERT INTO zonas (name) VALUES (?)", (zona,))
+        
+        c.execute("SELECT id, name FROM zonas")
+        zona_map = {name: id for id, name in c.fetchall()}
+        
+        modulos_data = [
+            ('ANTOFAGASTA', 'Norte'), ('COQUIMBO 1', 'Norte'), ('COQUIMBO 2', 'Norte'),
+            ('SERENA 2', 'Norte'), ('SERENA 3', 'Norte'), ('LOS ANDES', 'Quinta'),
+            ('VIÑA 1', 'Quinta'), ('VIÑA 2', 'Quinta'), ('CENTRO 2', 'RM'),
+            ('IMPERIO 1', 'RM'), ('IMPERIO 2', 'RM'), ('MELIPILLA', 'RM'),
+            ('PUENTE ALTO', 'RM'), ('QUILICURA', 'RM'), ('RANCAGUA', 'RM'),
+            ('LINARES', 'Sur'), ('SAN FERNANDO', 'Sur'), ('TALCA', 'Sur')
+        ]
+        
+        for mod_name, zona_name in modulos_data:
+            c.execute("INSERT INTO modulos (zona_id, name) VALUES (?, ?)", (zona_map[zona_name], mod_name))
+        conn.commit()
+
+    c.execute("SELECT COUNT(*) FROM productos")
+    if c.fetchone()[0] == 0:
+        productos_data = [
+            ('PACK LENTES DE SOL 1 x', 12990, 200),
+            ('PACK LENTES DE PANTALLA', 12990, 200),
+            ('PACK LENTES DE SOL 2 x', 19990, 400),
+            ('PACK LENTES + ESTUCHE BLANDO', 17990, 400),
+            ('PACK LENTES + STRAP', 17990, 400),
+            ('PACK LENTES 1 x POLARIZADO + ESTUCHE BLANDO+ KIT', 23990, 1000),
+            ('PACK LENTES GRANDES ANTIPARRA CON LIGA', 19990, 1000),
+            ('ANTIPARRA MEDIANO', 14990, 800),
+            ('ANTIPARRA PEQUEÑO', 9990, 200),
+            ('PACK LENTES DE GRADUACION', 12990, 200),
+            ('PACK LENTES FILTRO AZUL', 14990, 1000),
+            ('JOCKEY (2 X PROD. SELECCIONADO)', 9990, 600),
+            ('ESTUCHES MODA', 6990, 200),
+            ('ESTUCHES CIERRE', 6990, 200),
+            ('ESTUCHE DE LECTURA', 6990, 200),
+            ('STRAP TELA', 4990, 150),
+            ('STRAP DISEÑO', 6990, 200),
+            ('STRAP CUERO', 6990, 200),
+            ('LIMPIA CRISTAL + PAÑO', 2990, 100),
+            ('LENTE LED', 14990, 1000),
+            ('PULSERAS', 9990, 200),
+            ('SUJETADORES PARA LENTES', 1000, 100),
+            ('CORREAS DE CARTERAS DELGADAS Y GRUESAS', 9990, 600),
+            ('ESTUCHE COLGANTE DE LENTES', 6990, 200),
+            ('COLGANTE DE CELULAR (PULSERA)', 4990, 200),
+            ('COLGANTE DE CELULAR (COLLAR)', 6990, 200),
+            ('PACK DUO DE COLGANTE DE CELULAR', 7990, 300),
+            ('JOCKEY, GORRAS, SOMBREROS, CUELLOS Y OTROS.', 14990, 1000),
+            ('CARTERAS ORDENADOR', 9990, 600)
+        ]
+        
+        c.execute("SELECT id FROM zonas")
+        zonas_ids = [row[0] for row in c.fetchall()]
+        
+        for zona_id in zonas_ids:
+            for name, price, commission in productos_data:
+                c.execute("INSERT INTO productos (zona_id, name, price, commission) VALUES (?, ?, ?, ?)", 
+                        (zona_id, name, price, commission))
+        conn.commit()
+        
+    conn.close()
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -88,6 +158,7 @@ def init_db():
                   
     conn.commit()
     conn.close()
+    populateDefaults()
 
 def generate_random_password(length=6):
     """Generates a simple alphanumeric password."""
