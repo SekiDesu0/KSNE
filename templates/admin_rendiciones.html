@@ -1,14 +1,15 @@
 {% extends "macros/base.html" %}
-
+{% from 'macros/modals.html' import view_rendicion_modal %}
 
 {% block title %}Historial de Rendiciones{% endblock %}
 
 {% block head %}
-<!-- HEAD -->
 {% endblock %}
 
 {% block content %}
 <h2 class="mb-4">Historial de Rendiciones</h2>
+
+{{ view_rendicion_modal() }}
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
@@ -34,7 +35,14 @@
                     <td class="align-middle">${{ "{:,.0f}".format(r[5]).replace(',', '.') }}</td>
                     <td class="align-middle text-danger">${{ "{:,.0f}".format(r[6]).replace(',', '.') }}</td>
                     <td class="text-end">
-                        <a href="{{ url_for('view_rendicion', id=r[0]) }}" class="btn btn-sm btn-primary">Ver Detalle</a>
+                        <button type="button" 
+                                class="btn btn-sm btn-primary" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#viewRendicionModal"
+                                data-url="{{ url_for('view_rendicion', id=r[0]) }}"
+                                data-id="{{ r[0] }}">
+                            Ver Detalle
+                        </button>
                     </td>
                 </tr>
                 {% else %}
@@ -46,4 +54,35 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const viewModal = document.getElementById('viewRendicionModal');
+    if (viewModal) {
+        viewModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const url = button.getAttribute('data-url');
+            const id = button.getAttribute('data-id');
+            
+            const title = viewModal.querySelector('#rendicionModalTitle');
+            const body = viewModal.querySelector('#rendicionModalBody');
+            
+            title.textContent = `Detalle de Rendición #${id}`;
+            body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+            
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const content = doc.querySelector('.row').outerHTML;
+                    body.innerHTML = content;
+                })
+                .catch(err => {
+                    body.innerHTML = '<div class="alert alert-danger">Error al cargar los detalles.</div>';
+                });
+        });
+    }
+</script>
 {% endblock %}
