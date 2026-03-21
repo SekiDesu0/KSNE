@@ -43,10 +43,18 @@
                         <option value="Part Time">Part Time</option>
                     </select>
                 </div>
+                <div class="col-md-12">
+                    <label class="form-label">Acompañante (Opcional)</label>
+                    <select class="form-select" name="companion_id">
+                        <option value="">Trabajando solo / Sin acompañante</option>
+                        {% for worker in otros_trabajadores %}
+                            <option value="{{ worker[0] }}">{{ worker[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
     </div>
-
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-primary text-white">Detalle de Productos Vendidos</div>
         <div class="card-body p-0">
@@ -110,21 +118,21 @@
                     <label class="form-label">Venta Tarjeta</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input sale-input" name="venta_tarjeta" id="venta_tarjeta" required>
+                        <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_tarjeta" id="venta_tarjeta" required>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Venta Mercado Pago</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input sale-input" name="venta_mp" id="venta_mp" required>
+                        <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_mp" id="venta_mp" required>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Venta Efectivo</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input sale-input" name="venta_efectivo" id="venta_efectivo" required>
+                        <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_efectivo" id="venta_efectivo" required>
                     </div>
                 </div>
             </div>
@@ -134,14 +142,14 @@
                     <label class="form-label text-info fw-bold">Total Digital (Tarjeta + MP)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-info text-white border-info">$</span>
-                        <input type="text" class="form-control bg-dark-subtle fw-bold" id="total_digital" readonly>
+                        <input type="text" class="form-control bg-dark-subtle fw-bold" placeholder="0" id="total_digital" readonly>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label text-success fw-bold">Total Ventas (Todos los medios)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-success text-white border-success">$</span>
-                        <input type="text" class="form-control bg-dark-subtle fw-bold" id="total_general" readonly>
+                        <input type="text" class="form-control bg-dark-subtle fw-bold" placeholder="0" id="total_general" readonly>
                     </div>
                 </div>
             </div>

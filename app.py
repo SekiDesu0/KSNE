@@ -52,18 +52,20 @@ def init_db():
     
     # 5. Rendiciones (The main form headers)
     c.execute('''CREATE TABLE IF NOT EXISTS rendiciones
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  worker_id INTEGER NOT NULL,
-                  modulo_id INTEGER NOT NULL,
-                  fecha DATE NOT NULL,
-                  turno TEXT NOT NULL,
-                  venta_tarjeta INTEGER DEFAULT 0,
-                  venta_mp INTEGER DEFAULT 0,
-                  venta_efectivo INTEGER DEFAULT 0,
-                  gastos INTEGER DEFAULT 0,
-                  observaciones TEXT,
-                  FOREIGN KEY (worker_id) REFERENCES workers(id),
-                  FOREIGN KEY (modulo_id) REFERENCES modulos(id))''')
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                worker_id INTEGER NOT NULL,
+                companion_id INTEGER, -- Nueva columna
+                modulo_id INTEGER NOT NULL,
+                fecha DATE NOT NULL,
+                turno TEXT NOT NULL,
+                venta_tarjeta INTEGER DEFAULT 0,
+                venta_mp INTEGER DEFAULT 0,
+                venta_efectivo INTEGER DEFAULT 0,
+                gastos INTEGER DEFAULT 0,
+                observaciones TEXT,
+                FOREIGN KEY (worker_id) REFERENCES workers(id),
+                FOREIGN KEY (companion_id) REFERENCES workers(id),
+                FOREIGN KEY (modulo_id) REFERENCES modulos(id))''')
 
     # 6. Rendicion Items (The individual product quantities sold)
     c.execute('''CREATE TABLE IF NOT EXISTS rendicion_items
@@ -228,6 +230,9 @@ def worker_dashboard():
         efectivo = clean_and_validate(request.form.get('venta_efectivo'))
         gastos = clean_and_validate(request.form.get('gastos')) or 0
         obs = request.form.get('observaciones', '').strip()
+        companion_id = request.form.get('companion_id')
+        if companion_id == "":
+            companion_id = None
 
         # VERIFICACIÓN: Todos los campos de venta deben estar rellenos
         if tarjeta is None or mp is None or efectivo is None or not fecha or not turno:
@@ -239,10 +244,7 @@ def worker_dashboard():
         total_ventas_general = total_digital + efectivo
 
         # Insertar Cabecera de Rendición
-        c.execute('''INSERT INTO rendiciones 
-                     (worker_id, modulo_id, fecha, turno, venta_tarjeta, venta_mp, venta_efectivo, gastos, observaciones) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                  (session['user_id'], modulo_id, fecha, turno, tarjeta, mp, efectivo, gastos, obs))
+        c.execute('''INSERT INTO rendiciones (worker_id, companion_id, modulo_id, fecha, turno, venta_tarjeta, venta_mp, venta_efectivo, gastos, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (session['user_id'], companion_id, modulo_id, fecha, turno, tarjeta, mp, efectivo, gastos, obs))
         rendicion_id = c.lastrowid
 
         # Insertar Productos (Solo aquellos con cantidad > 0)
@@ -265,6 +267,10 @@ def worker_dashboard():
         return redirect(url_for('worker_dashboard'))
 
     # 3. Cargar Productos para la solicitud GET
+    c.execute("SELECT id, name FROM workers WHERE id != ? AND is_admin = 0 ORDER BY name", (session['user_id'],))
+    otros_trabajadores = c.fetchall()
+    
+    # Cargar Productos (código existente)
     c.execute("SELECT id, name, price, commission FROM productos WHERE zona_id = ? ORDER BY name", (zona_id,))
     productos = c.fetchall()
     conn.close()
@@ -276,6 +282,7 @@ def worker_dashboard():
                            zona_name=zona_name, 
                            productos=productos,
                            has_commission=has_commission,
+                           otros_trabajadores=otros_trabajadores,
                            today=date.today().strftime('%Y-%m-%d'))
                            
 @app.route('/admin/workers', methods=['GET', 'POST'])
@@ -605,10 +612,12 @@ def view_rendicion(id):
     # Get Header Info
     c.execute('''
         SELECT r.id, r.fecha, w.name, m.name, r.turno,
-               r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones
+            r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
+            c_w.name -- Nombre del acompañante (índice 10)
         FROM rendiciones r
         JOIN workers w ON r.worker_id = w.id
         JOIN modulos m ON r.modulo_id = m.id
+        LEFT JOIN workers c_w ON r.companion_id = c_w.id -- Join para el acompañante
         WHERE r.id = ?
     ''', (id,))
     rendicion = c.fetchone()

@@ -58,20 +58,29 @@
     <div class="col-md-4 mb-4">
         <div class="card shadow-sm mb-4 border-info">
             <div class="card-header bg-info text-dark fw-bold">Declaración del Trabajador</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-5 text-muted">Fecha</dt>
-                    <dd class="col-sm-7">{{ rendicion[1] }}</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Trabajador</dt>
-                    <dd class="col-sm-7">{{ rendicion[2] }}</dd>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">Fecha</dt>
+                        <dd class="col-sm-7">{{ rendicion[1] }}</dd>
+                        
+                        <dt class="col-sm-5 text-muted">Trabajador</dt>
+                        <dd class="col-sm-7">{{ rendicion[2] }}</dd>
 
-                    <dt class="col-sm-5 text-muted">Módulo</dt>
-                    <dd class="col-sm-7"><span class="badge bg-secondary">{{ rendicion[3] }}</span></dd>
+                        <dt class="col-sm-5 text-muted">Acompañante</dt>
+                        <dd class="col-sm-7">
+                            {% if rendicion[10] %}
+                                {{ rendicion[10] }}
+                            {% else %}
+                                <span class="text-muted italic small">Sin acompañante</span>
+                            {% endif %}
+                        </dd>
 
-                    <dt class="col-sm-5 text-muted">Turno</dt>
-                    <dd class="col-sm-7">{{ rendicion[4] }}</dd>
-                </dl>
+                        <dt class="col-sm-5 text-muted">Módulo</dt>
+                        <dd class="col-sm-7"><span class="badge bg-secondary">{{ rendicion[3] }}</span></dd>
+
+                        <dt class="col-sm-5 text-muted">Turno</dt>
+                        <dd class="col-sm-7">{{ rendicion[4] }}</dd>
+                    </dl>
                 
                 <hr>
                 
