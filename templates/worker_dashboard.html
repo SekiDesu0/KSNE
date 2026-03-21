@@ -1,5 +1,5 @@
 {% extends "macros/base.html" %}
-{% from 'macros/modals.html' import confirm_modal %}
+{% from 'macros/modals.html' import confirm_modal, alert_modal %}
 
 {% block title %}Rendición de Caja{% endblock %}
 
@@ -180,6 +180,13 @@
     btn_class='btn-success',
     btn_text='Sí, enviar ahora'
 ) }}
+
+{{ alert_modal(
+    id='globalAlertModal',
+    title='Atención',
+    message='Por favor, completa los campos requeridos.'
+) }}
+
 {% endblock %}
 
 {% block scripts %}
@@ -214,41 +221,53 @@
     });
 </script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const submitModal = document.getElementById('confirmSubmitModal');
-        const mainForm = document.querySelector('form');
-        const confirmBtn = submitModal.querySelector('button[type="submit"]');
-        
-        // Función única de validación para no repetir código
-        function validarFormulario() {
-            const requiredInputs = mainForm.querySelectorAll('[required]');
-            let valid = true;
+document.addEventListener('DOMContentLoaded', function() {
+    const submitModal = document.getElementById('confirmSubmitModal');
+    const mainForm = document.querySelector('form');
+    const alertModalEl = document.getElementById('globalAlertModal');
+    const alertModal = new bootstrap.Modal(alertModalEl);
+    
+    const confirmBtn = submitModal.querySelector('button[type="submit"]');
 
-            requiredInputs.forEach(input => {
-                const isMoney = input.classList.contains('money-input');
-                // Si está vacío Y no es un campo de dinero, es inválido
-                // Si es campo de dinero, el placeholder/blur se encarga de que sea 0
-                if (!input.value.trim() && !isMoney) { 
-                    input.classList.add('is-invalid');
-                    valid = false;
-                } else {
-                    input.classList.remove('is-invalid');
-                }
-            });
-            return valid;
-        }
+    function mostrarError(mensaje) {
+        document.getElementById('globalAlertModalBody').textContent = mensaje;
+        alertModal.show();
+    }
 
-        confirmBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (validarFormulario()) {
-                mainForm.submit();
+    function validarFormulario() {
+        const requiredInputs = mainForm.querySelectorAll('[required]');
+        let valid = true;
+
+        requiredInputs.forEach(input => {
+            const isMoney = input.classList.contains('money-input');
+            // Validamos solo si está vacío y NO es un campo de dinero (que ya tiene '0')
+            if (!input.value.trim() || (isMoney && input.value === '')) { 
+                input.classList.add('is-invalid');
+                valid = false;
             } else {
-                const modalInstance = bootstrap.Modal.getInstance(submitModal);
-                modalInstance.hide();
-                alert("Por favor, rellena los campos obligatorios (Fecha y Turno).");
+                input.classList.remove('is-invalid');
             }
         });
+        return valid;
+    }
+
+    confirmBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (validarFormulario()) {
+            mainForm.submit();
+        } else {
+            // Cerramos el modal de confirmación antes de mostrar el de error
+            bootstrap.Modal.getInstance(submitModal).hide();
+            mostrarError("Por favor, rellena los campos obligatorios (Fecha y Turno) antes de enviar.");
+        }
     });
+
+    // Inicializar campos de dinero en 0 para que no se queje la validación
+    document.querySelectorAll('.money-input').forEach(input => {
+        if (!input.value.trim()) input.value = '0';
+    });
+});
 </script>
 
 <script>
@@ -285,9 +304,10 @@
         const requiredInputs = this.querySelectorAll('[required]');
         let valid = true;
 
-       requiredInputs.forEach(input => {
+        requiredInputs.forEach(input => {
             const isMoney = input.classList.contains('money-input');
-            if (!input.value.trim() && !isMoney) { 
+            // Si está vacío y no es campo de dinero (o el campo de dinero está totalmente vacío)
+            if (!input.value.trim() || (isMoney && input.value === '')) { 
                 input.classList.add('is-invalid');
                 valid = false;
             } else {
@@ -297,27 +317,33 @@
 
         if (!valid) {
             e.preventDefault();
-            alert("Por favor, rellena todos los campos obligatorios antes de enviar.");
+            
+            // Usamos la función del modal bonito en lugar del alert
+            const alertModalEl = document.getElementById('globalAlertModal');
+            if (alertModalEl) {
+                const alertModal = bootstrap.Modal.getOrCreateInstance(alertModalEl);
+                document.getElementById('globalAlertModalBody').textContent = "Por favor, rellena todos los campos obligatorios antes de enviar.";
+                alertModal.show();
+            } else {
+                // Respaldo por si el modal no carga por alguna razón mística
+                alert("Por favor, rellena todos los campos obligatorios.");
+            }
         }
     });
 
-    // Reuse our formatting script for the summary money inputs
     document.querySelectorAll('.money-input').forEach(function(input) {
-        // Inicializar con 0 si está vacío para evitar que el validador se confunda
-        if (!input.value.trim()) input.value = '0';
-
         input.addEventListener('focus', function() {
             if (this.value === '0') this.value = '';
         });
 
         input.addEventListener('blur', function() {
-            if (this.value.trim() === '') {
+            if (this.value.trim() === '' || this.value.trim() === '0') {
                 this.value = '0';
-                calcularTotales();
             }
+            calcularTotales();
         });
 
-        input.addEventListener('input', function(e) {
+        input.addEventListener('input', function() {
             let value = this.value.replace(/\D/g, '');
             if (value !== '') {
                 this.value = parseInt(value, 10).toLocaleString('es-CL');
