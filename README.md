@@ -36,13 +36,10 @@ services:
 # TODO general:
 - separar productos para tiendas
 - limpiar requirements.txt
-- hacer prompts mas bonitos y estandar
 
 # TODO peppermint:
 ## formulario
-- cantidad de boletas por metodod de pago
-- añadir segunda persona a cargo
-- verificar que todos los campos esten rellenos
+- cantidad de boletas por metodo de pago
 - separar credito y debito
 - permitir subir foto de total gastos (boleta/factura)
 ## otros

@@ -1,5 +1,5 @@
 {% extends "macros/base.html" %}
-{% from 'macros/modals.html' import rendicion_detail_modal %}
+{% from 'macros/modals.html' import rendicion_detail_modal, confirm_modal, edit_rendicion_modal %}
 
 {% block title %}Historial de Rendiciones{% endblock %}
 
@@ -8,6 +8,14 @@
 
 {% block content %}
 <h2 class="mb-4">Historial de Rendiciones</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
@@ -33,14 +41,43 @@
                     <td class="align-middle">${{ "{:,.0f}".format((r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}</td>
                     <td class="align-middle text-danger">${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}</td>
                     <td class="text-end">
-                        <button type="button" 
-                                class="btn btn-sm btn-primary" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#viewRendicion{{ r[0] }}">
-                            Ver Detalle
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" 
+                                    class="btn btn-sm btn-info text-white" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#viewRendicion{{ r[0] }}"
+                                    title="Ver Detalle">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            
+                            <button type="button" 
+                                    class="btn btn-sm btn-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editRendicion{{ r[0] }}"
+                                    title="Editar Valores Declarados">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+
+                            <button type="button" 
+                                    class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteRendicion{{ r[0] }}"
+                                    title="Eliminar Rendición">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+
+                        {{ rendicion_detail_modal(r, r[14], r[15], r[16]) }}
+                        {{ edit_rendicion_modal(r, workers, modulos) }}
                         
-                        {{ rendicion_detail_modal(r, r[11], r[12], r[13]) }}
+                        {{ confirm_modal(
+                            id='deleteRendicion' ~ r[0],
+                            title='Eliminar Rendición',
+                            message='¿Estás seguro de que deseas eliminar la rendición #' ~ r[0] ~ '? Esta acción no se puede deshacer.',
+                            action_url=url_for('delete_rendicion', id=r[0]),
+                            btn_class='btn-danger',
+                            btn_text='Eliminar'
+                        ) }}
                     </td>
                 </tr>
                 {% else %}
@@ -52,4 +89,20 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function calcTotalEdit(id) {
+        const getVal = (inputId) => parseInt(document.getElementById(inputId).value.replace(/\D/g, '')) || 0;
+        
+        const tarjeta = getVal(`edit_tarjeta_${id}`);
+        const mp = getVal(`edit_mp_${id}`);
+        const efectivo = getVal(`edit_efectivo_${id}`);
+        
+        const total = tarjeta + mp + efectivo;
+        
+        document.getElementById(`display_nuevo_total_${id}`).innerText = '$' + total.toLocaleString('es-CL');
+    }
+</script>
 {% endblock %}

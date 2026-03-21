@@ -588,11 +588,11 @@ def admin_rendiciones():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # 1. Obtenemos la cabecera exacta igual que en view_rendicion (Índices 0 al 10)
+    # Añadimos worker_id (11), companion_id (12) y modulo_id (13) a la consulta
     c.execute('''
         SELECT r.id, r.fecha, w.name, m.name, r.turno,
-            r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-            c_w.name
+               r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
+               c_w.name, r.worker_id, r.companion_id, r.modulo_id
         FROM rendiciones r
         JOIN workers w ON r.worker_id = w.id
         JOIN modulos m ON r.modulo_id = m.id
@@ -603,7 +603,6 @@ def admin_rendiciones():
 
     rendiciones_completas = []
 
-    # 2. Por cada rendición, buscamos sus ítems y calculamos los totales
     for r in rendiciones_basicas:
         c.execute('''
             SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
@@ -618,60 +617,84 @@ def admin_rendiciones():
         total_calculado = sum(item[4] for item in items)
         comision_total = sum(item[5] for item in items)
 
-        # 3. Anexamos los nuevos datos a la tupla original
-        # r[11] = items, r[12] = total_calculado, r[13] = comision_total
+        # Ahora los ítems y totales ocupan los índices 14, 15 y 16
         r_completa = r + (items, total_calculado, comision_total)
         rendiciones_completas.append(r_completa)
 
+    # Obtenemos listas para los <select> del modal de edición
+    c.execute("SELECT id, name FROM workers WHERE is_admin = 0 ORDER BY name")
+    workers = c.fetchall()
+    
+    c.execute("SELECT id, name FROM modulos ORDER BY name")
+    modulos = c.fetchall()
+
     conn.close()
     
-    return render_template('admin_rendiciones.html', rendiciones=rendiciones_completas)
+    return render_template('admin_rendiciones.html', 
+                           rendiciones=rendiciones_completas,
+                           workers=workers,
+                           modulos=modulos)
 
-@app.route('/admin/rendiciones/<int:id>')
+@app.route('/admin/rendiciones/delete/<int:id>', methods=['POST'])
 @admin_required
-def view_rendicion(id):
+def delete_rendicion(id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    
+    c.execute("DELETE FROM rendicion_items WHERE rendicion_id=?", (id,))
+    c.execute("DELETE FROM rendiciones WHERE id=?", (id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash("Rendición eliminada.", "info")
+    return redirect(url_for('admin_rendiciones'))
 
-    # Get Header Info
-    c.execute('''
-        SELECT r.id, r.fecha, w.name, m.name, r.turno,
-            r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-            c_w.name -- Nombre del acompañante (índice 10)
-        FROM rendiciones r
-        JOIN workers w ON r.worker_id = w.id
-        JOIN modulos m ON r.modulo_id = m.id
-        LEFT JOIN workers c_w ON r.companion_id = c_w.id -- Join para el acompañante
-        WHERE r.id = ?
-    ''', (id,))
-    rendicion = c.fetchone()
 
-    if not rendicion:
-        conn.close()
-        flash("Rendición no encontrada.", "danger")
+@app.route('/admin/rendiciones/edit/<int:id>', methods=['POST'])
+@admin_required
+def edit_rendicion(id):
+    # Campos de cabecera
+    fecha = request.form.get('fecha')
+    turno = request.form.get('turno')
+    worker_id = request.form.get('worker_id')
+    modulo_id = request.form.get('modulo_id')
+    companion_id = request.form.get('companion_id')
+    
+    if companion_id == "":
+        companion_id = None
+
+    # Campos de dinero
+    tarjeta = request.form.get('venta_tarjeta', '0').replace('.', '')
+    mp = request.form.get('venta_mp', '0').replace('.', '')
+    efectivo = request.form.get('venta_efectivo', '0').replace('.', '')
+    gastos = request.form.get('gastos', '0').replace('.', '')
+    observaciones = request.form.get('observaciones', '').strip()
+
+    try:
+        tarjeta = int(tarjeta) if tarjeta else 0
+        mp = int(mp) if mp else 0
+        efectivo = int(efectivo) if efectivo else 0
+        gastos = int(gastos) if gastos else 0
+    except ValueError:
+        flash("Los valores ingresados deben ser números válidos.", "danger")
         return redirect(url_for('admin_rendiciones'))
 
-    # Get Line Items
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
     c.execute('''
-        SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
-               (ri.cantidad * ri.precio_historico) as total_linea,
-               (ri.cantidad * ri.comision_historica) as total_comision
-        FROM rendicion_items ri
-        JOIN productos p ON ri.producto_id = p.id
-        WHERE ri.rendicion_id = ?
-    ''', (id,))
-    items = c.fetchall()
+        UPDATE rendiciones 
+        SET fecha=?, turno=?, worker_id=?, modulo_id=?, companion_id=?,
+            venta_tarjeta=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?
+        WHERE id=?
+    ''', (fecha, turno, worker_id, modulo_id, companion_id, tarjeta, mp, efectivo, gastos, observaciones, id))
+    
+    conn.commit()
     conn.close()
 
-    # Calculate the mathematical truth vs what they declared
-    total_calculado = sum(item[4] for item in items)
-    comision_total = sum(item[5] for item in items)
-
-    return render_template('admin_rendicion_detail.html', 
-                           rendicion=rendicion, 
-                           items=items,
-                           total_calculado=total_calculado,
-                           comision_total=comision_total)
+    flash("Rendición actualizada correctamente.", "success")
+    return redirect(url_for('admin_rendiciones'))
 
 if __name__ == '__main__':
     init_db()

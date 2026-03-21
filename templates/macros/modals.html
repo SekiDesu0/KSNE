@@ -247,3 +247,113 @@
     </div>
 </div>
 {% endmacro %}
+
+{% macro edit_rendicion_modal(rendicion, workers, modulos) %}
+<div class="modal fade" id="editRendicion{{ rendicion[0] }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Rendición #{{ rendicion[0] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('edit_rendicion', id=rendicion[0]) }}">
+                <div class="modal-body text-start">
+                    <h6 class="border-bottom pb-2 text-primary">Datos Generales</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" class="form-control" name="fecha" value="{{ rendicion[1] }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Turno</label>
+                            <select class="form-select" name="turno" required>
+                                <option value="Primer Turno" {% if rendicion[4] == 'Primer Turno' %}selected{% endif %}>Primer Turno</option>
+                                <option value="Segundo Turno" {% if rendicion[4] == 'Segundo Turno' %}selected{% endif %}>Segundo Turno</option>
+                                <option value="Part Time" {% if rendicion[4] == 'Part Time' %}selected{% endif %}>Part Time</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Módulo</label>
+                            <select class="form-select" name="modulo_id" required>
+                                {% for mod in modulos %}
+                                    <option value="{{ mod[0] }}" {% if mod[0] == rendicion[13] %}selected{% endif %}>{{ mod[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Trabajador</label>
+                            <select class="form-select" name="worker_id" required>
+                                {% for w in workers %}
+                                    <option value="{{ w[0] }}" {% if w[0] == rendicion[11] %}selected{% endif %}>{{ w[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Acompañante</label>
+                            <select class="form-select" name="companion_id">
+                                <option value="">Sin acompañante</option>
+                                {% for w in workers %}
+                                    <option value="{{ w[0] }}" {% if w[0] == rendicion[12] %}selected{% endif %}>{{ w[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <h6 class="border-bottom pb-2 text-success">Declaración de Dinero</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tarjetas</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control money-input" id="edit_tarjeta_{{ rendicion[0] }}" name="venta_tarjeta" value="{{ rendicion[5] }}" oninput="calcTotalEdit({{ rendicion[0] }})" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Mercado Pago</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control money-input" id="edit_mp_{{ rendicion[0] }}" name="venta_mp" value="{{ rendicion[6] }}" oninput="calcTotalEdit({{ rendicion[0] }})" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Efectivo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control money-input" id="edit_efectivo_{{ rendicion[0] }}" name="venta_efectivo" value="{{ rendicion[7] }}" oninput="calcTotalEdit({{ rendicion[0] }})" required>
+                            </div>
+                        </div>
+
+                        {% set total_declarado_actual = (rendicion[5] or 0) + (rendicion[6] or 0) + (rendicion[7] or 0) %}
+                        <div class="col-12 mt-3 bg-body-secondary p-3 rounded border border-secondary-subtle">
+                            <div class="d-flex justify-content-between pb-2">
+                                <span class="text-body-secondary">Total Declarado (Original):</span>
+                                <span class="text-body-secondary">${{ "{:,.0f}".format(total_declarado_actual).replace(',', '.') }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between pt-2 border-top border-secondary-subtle">
+                                <strong class="text-info">Nuevo Total Declarado:</strong>
+                                <strong class="text-info fs-5" id="display_nuevo_total_{{ rendicion[0] }}">${{ "{:,.0f}".format(total_declarado_actual).replace(',', '.') }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mt-4">
+                            <label class="form-label text-danger">Gastos</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control money-input border-danger" name="gastos" value="{{ rendicion[8] }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-8 mt-4">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" name="observaciones" rows="1">{{ rendicion[9] }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
