@@ -44,6 +44,7 @@ services:
 - mostrar ventas diarias por modulo y zona(?)
 - formulario de perdidas en el dashboard(?) o hub
 - categorias de productos (complementos, etc)
+- precio de prodcot por zona
 
 # TODO quizas:
 - generar reportes(?)
