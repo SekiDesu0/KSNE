@@ -34,7 +34,6 @@ services:
 ```
 
 # TODO general:
-- hacer que trabajador acompañante solo muestre trabajadores en el mismo modulo
 - separar productos para tiendas
 - limpiar requirements.txt
 - hacer placeholders funcionales (si dice 0 que el sistema lea 0 no null)

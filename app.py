@@ -345,7 +345,11 @@ def worker_dashboard():
         return redirect(url_for('worker_dashboard'))
 
     # 3. Cargar Productos para la solicitud GET
-    c.execute("SELECT id, name FROM workers WHERE id != ? AND is_admin = 0 ORDER BY name", (session['user_id'],))
+    c.execute('''
+                SELECT id, name FROM workers 
+                WHERE id != ? AND modulo_id = ? AND is_admin = 0 
+                ORDER BY name
+            ''', (session['user_id'], modulo_id))
     otros_trabajadores = c.fetchall()
     
     # Cargar Productos (código existente)
