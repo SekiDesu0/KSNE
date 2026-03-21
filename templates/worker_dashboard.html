@@ -114,11 +114,18 @@
         <div class="card-header bg-info text-dark">Resumen Financiero</div>
         <div class="card-body">
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label class="form-label">Venta Tarjeta</label>
+                <div class="col-md-3">
+                    <label class="form-label">Venta Débito</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_tarjeta" id="venta_tarjeta" required>
+                        <input type="text" class="form-control money-input sale-input" name="venta_debito" id="venta_debito" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Venta Crédito</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control money-input sale-input" name="venta_credito" id="venta_credito" required>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -283,12 +290,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return parseInt(el.value.replace(/\D/g, '')) || 0;
         };
 
-        const tarjeta = getVal('venta_tarjeta');
+        const debito = getVal('venta_debito');
+        const credito = getVal('venta_credito');
         const mp = getVal('venta_mp');
         const efectivo = getVal('venta_efectivo');
         const gastos = getVal('gastos');
 
-        const totalDigital = tarjeta + mp;
+        const totalDigital = debito + credito + mp;
         const totalGeneral = (totalDigital + efectivo) - gastos;
 
         displayDigital.value = totalDigital.toLocaleString('es-CL');

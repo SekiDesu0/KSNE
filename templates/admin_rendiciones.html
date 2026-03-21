@@ -38,7 +38,9 @@
                     <td class="align-middle">{{ r[2] }}</td>
                     <td class="align-middle"><span class="badge bg-info text-dark">{{ r[3] }}</span></td>
                     <td class="align-middle">{{ r[4] }}</td>
-                    <td class="align-middle">${{ "{:,.0f}".format((r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}</td>
+                    <td class="align-middle">
+                        ${{ "{:,.0f}".format((r[5] or 0) + (r[17] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}
+                    </td>
                     <td class="align-middle text-danger">${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}</td>
                     <td class="text-end">
                         <div class="btn-group" role="group">

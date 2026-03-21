@@ -54,11 +54,12 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS rendiciones
                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
                 worker_id INTEGER NOT NULL,
-                companion_id INTEGER, -- Nueva columna
+                companion_id INTEGER,
                 modulo_id INTEGER NOT NULL,
                 fecha DATE NOT NULL,
                 turno TEXT NOT NULL,
-                venta_tarjeta INTEGER DEFAULT 0,
+                venta_debito INTEGER DEFAULT 0,
+                venta_credito INTEGER DEFAULT 0,
                 venta_mp INTEGER DEFAULT 0,
                 venta_efectivo INTEGER DEFAULT 0,
                 gastos INTEGER DEFAULT 0,
@@ -225,7 +226,8 @@ def worker_dashboard():
                 return 0 # <--- Cambiado de None a 0
 
         # Captura y validación de campos obligatorios
-        tarjeta = clean_and_validate(request.form.get('venta_tarjeta'))
+        debito = clean_and_validate(request.form.get('venta_debito'))
+        credito = clean_and_validate(request.form.get('venta_credito'))
         mp = clean_and_validate(request.form.get('venta_mp'))
         efectivo = clean_and_validate(request.form.get('venta_efectivo'))
         gastos = clean_and_validate(request.form.get('gastos')) or 0
@@ -244,7 +246,12 @@ def worker_dashboard():
         total_ventas_general = total_digital + efectivo
 
         # Insertar Cabecera de Rendición
-        c.execute('''INSERT INTO rendiciones (worker_id, companion_id, modulo_id, fecha, turno, venta_tarjeta, venta_mp, venta_efectivo, gastos, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (session['user_id'], companion_id, modulo_id, fecha, turno, tarjeta, mp, efectivo, gastos, obs))
+        c.execute('''INSERT INTO rendiciones 
+                    (worker_id, companion_id, modulo_id, fecha, turno, 
+                    venta_debito, venta_credito, venta_mp, venta_efectivo, gastos, observaciones) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                    (session['user_id'], companion_id, modulo_id, fecha, turno, 
+                debito, credito, mp, efectivo, gastos, obs))
         rendicion_id = c.lastrowid
 
         # Insertar Productos (Solo aquellos con cantidad > 0)
@@ -590,15 +597,15 @@ def admin_rendiciones():
     
     # Añadimos worker_id (11), companion_id (12) y modulo_id (13) a la consulta
     c.execute('''
-        SELECT r.id, r.fecha, w.name, m.name, r.turno,
-               r.venta_tarjeta, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-               c_w.name, r.worker_id, r.companion_id, r.modulo_id
-        FROM rendiciones r
-        JOIN workers w ON r.worker_id = w.id
-        JOIN modulos m ON r.modulo_id = m.id
-        LEFT JOIN workers c_w ON r.companion_id = c_w.id
-        ORDER BY r.fecha DESC, r.id DESC
-    ''')
+            SELECT r.id, r.fecha, w.name, m.name, r.turno,
+                r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
+                c_w.name, r.worker_id, r.companion_id, r.modulo_id
+            FROM rendiciones r
+            JOIN workers w ON r.worker_id = w.id
+            JOIN modulos m ON r.modulo_id = m.id
+            LEFT JOIN workers c_w ON r.companion_id = c_w.id
+            ORDER BY r.fecha DESC, r.id DESC
+        ''')
     rendiciones_basicas = c.fetchall()
 
     rendiciones_completas = []
