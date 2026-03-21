@@ -201,8 +201,8 @@
 
                                     <dt class="col-sm-5 text-muted">Acompañante</dt>
                                     <dd class="col-sm-7">
-                                        {% if rendicion[10] %}
-                                            {{ rendicion[10] }}
+                                        {% if rendicion[11] %}
+                                            {{ rendicion[11] }}
                                         {% else %}
                                             <span class="text-muted italic small">Sin acompañante</span>
                                         {% endif %}
@@ -216,19 +216,23 @@
                                 </dl>
                                 <hr>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Tarjetas:</span>
+                                    <span class="text-muted">Débito:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[5] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Mercado Pago:</span>
+                                    <span class="text-muted">Crédito:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[6] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Efectivo:</span>
+                                    <span class="text-muted">Mercado Pago:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[7] or 0).replace(',', '.') }}</span>
                                 </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Efectivo:</span>
+                                    <span>${{ "{:,.0f}".format(rendicion[8] or 0).replace(',', '.') }}</span>
+                                </div>
                                 
-                                {% set total_declarado = rendicion[5] + rendicion[6] + rendicion[7] %}
+                                {% set total_declarado = (rendicion[5] or 0) + (rendicion[6] or 0) + (rendicion[7] or 0) + (rendicion[8] or 0) %}
                                 <div class="d-flex justify-content-between mt-3 pt-2 border-top">
                                     <strong class="fs-5">Total Declarado:</strong>
                                     <strong class="fs-5">${{ "{:,.0f}".format(total_declarado).replace(',', '.') }}</strong>
@@ -247,12 +251,12 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between mb-3">
                                     <strong class="text-danger">Monto Gastos:</strong>
-                                    <strong class="text-danger">-${{ "{:,.0f}".format(rendicion[8] or 0).replace(',', '.') }}</strong>
+                                    <strong class="text-danger">-${{ "{:,.0f}".format(rendicion[9] or 0).replace(',', '.') }}</strong>
                                 </div>
                                 <div>
                                     <span class="text-muted d-block mb-1">Observaciones:</span>
                                     <p class="mb-0 bg-dark p-2 rounded border border-secondary" style="font-size: 0.9em;">
-                                        {{ rendicion[9] if rendicion[9] else "Sin observaciones." }}
+                                        {{ rendicion[10] if rendicion[10] else "Sin observaciones." }}
                                     </p>
                                 </div>
                             </div>
@@ -321,11 +325,18 @@
 
                     <h6 class="border-bottom pb-2 text-success">Declaración de Dinero</h6>
                     <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Tarjetas</label>
+                        <div class="col-md-3">
+                            <label class="form-label">Débito</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="text" class="form-control money-input" id="edit_tarjeta_{{ rendicion[0] }}" name="venta_tarjeta" value="{{ rendicion[5] }}" oninput="calcTotalEdit({{ rendicion[0] }})" required>
+                                <input type="text" class="form-control" id="edit_debito_{{ rendicion[0] }}" name="venta_debito" value="{{ '{:,.0f}'.format(rendicion[5] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Crédito</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control" id="edit_credito_{{ rendicion[0] }}" name="venta_credito" value="{{ '{:,.0f}'.format(rendicion[6] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                             </div>
                         </div>
                         <div class="col-md-4">

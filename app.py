@@ -237,12 +237,12 @@ def worker_dashboard():
             companion_id = None
 
         # VERIFICACIÓN: Todos los campos de venta deben estar rellenos
-        if tarjeta is None or mp is None or efectivo is None or not fecha or not turno:
+        if debito is None or credito is None or mp is None or efectivo is None or not fecha or not turno:
             flash("Error: Todos los campos (Fecha, Turno, Tarjeta, MP y Efectivo) son obligatorios. Use 0 si no hubo ventas.", "danger")
             return redirect(url_for('worker_dashboard'))
 
         # CÁLCULOS ADICIONALES (Para lógica de negocio o auditoría futura)
-        total_digital = tarjeta + mp
+        total_digital = debito + credito + mp
         total_ventas_general = total_digital + efectivo
 
         # Insertar Cabecera de Rendición
@@ -671,15 +671,17 @@ def edit_rendicion(id):
     if companion_id == "":
         companion_id = None
 
-    # Campos de dinero
-    tarjeta = request.form.get('venta_tarjeta', '0').replace('.', '')
+    # ¡ADIÓS venta_tarjeta! Capturamos débito y crédito separados
+    debito = request.form.get('venta_debito', '0').replace('.', '')
+    credito = request.form.get('venta_credito', '0').replace('.', '')
     mp = request.form.get('venta_mp', '0').replace('.', '')
     efectivo = request.form.get('venta_efectivo', '0').replace('.', '')
     gastos = request.form.get('gastos', '0').replace('.', '')
     observaciones = request.form.get('observaciones', '').strip()
 
     try:
-        tarjeta = int(tarjeta) if tarjeta else 0
+        debito = int(debito) if debito else 0
+        credito = int(credito) if credito else 0
         mp = int(mp) if mp else 0
         efectivo = int(efectivo) if efectivo else 0
         gastos = int(gastos) if gastos else 0
@@ -690,12 +692,13 @@ def edit_rendicion(id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
+    # Actualizamos los nombres de las columnas en el UPDATE
     c.execute('''
         UPDATE rendiciones 
         SET fecha=?, turno=?, worker_id=?, modulo_id=?, companion_id=?,
-            venta_tarjeta=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?
+            venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?
         WHERE id=?
-    ''', (fecha, turno, worker_id, modulo_id, companion_id, tarjeta, mp, efectivo, gastos, observaciones, id))
+    ''', (fecha, turno, worker_id, modulo_id, companion_id, debito, credito, mp, efectivo, gastos, observaciones, id))
     
     conn.commit()
     conn.close()

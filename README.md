@@ -1,4 +1,4 @@
-# Rendiciones-App
+# KSNE-Rendiciones-App
 
 ## 🐳 Docker Deployment (Server)
 
