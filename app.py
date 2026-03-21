@@ -218,11 +218,11 @@ def worker_dashboard():
         # Función para limpiar puntos y validar presencia de datos
         def clean_and_validate(val):
             if val is None or val.strip() == "":
-                return None
+                return 0  # <--- Cambiado de None a 0
             try:
                 return int(val.replace('.', ''))
             except ValueError:
-                return None
+                return 0 # <--- Cambiado de None a 0
 
         # Captura y validación de campos obligatorios
         tarjeta = clean_and_validate(request.form.get('venta_tarjeta'))
