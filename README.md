@@ -52,7 +52,6 @@ services:
 # TODO peppermint:
 ## formulario
 - cantidad de boletas por metodo de pago
-- separar credito y debito
 - permitir subir foto de total gastos (boleta/factura)
 ## otros
 - bloquear turno para otra persona si ya fue subido por otra persona
