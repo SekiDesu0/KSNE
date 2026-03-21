@@ -40,6 +40,11 @@ services:
 - hacer placeholders funcionales (si dice 0 que el sistema lea 0 no null)
 - mostrar rendiciones antiguas
 - hacer como un hub del trabajador qu permita ver antiguos y crear uno nuevo
+- mostrar total de ventas con graficos en el index(?)
+- mostrar ventas diarias por modulo y zona(?)
+- formulario de perdidas en el dashboard(?) o hub
+- categorias de productos (complementos, etc)
+
 # TODO peppermint:
 ## formulario
 - cantidad de boletas por metodo de pago
