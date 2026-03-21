@@ -32,6 +32,8 @@ services:
         image: rendiciones:latest
         restart: unless-stopped
 ```
+# TODO preguntas:
+- ver si gastos debe o no restar del total
 
 # TODO general:
 - separar productos para tiendas
