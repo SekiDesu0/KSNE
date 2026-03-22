@@ -22,12 +22,13 @@
                         <div class="mb-3">
                             <label class="form-label">RUT</label>
                             <input type="text"
-                                   class="form-control"
-                                   name="rut"
-                                   id="rutInput"
-                                   placeholder="12.345.678-9"
-                                   required
-                                   autofocus>
+                                class="form-control"
+                                name="rut"
+                                id="rutInput"
+                                placeholder="12.345.678-9"
+                                maxlength="12"
+                                required
+                                autofocus>
                         </div>
                         <div class="mb-4">
                             <label class="form-label">Contraseña</label>
@@ -45,6 +46,11 @@
     <script>
     document.getElementById('rutInput').addEventListener('input', function(e) {
         let value = this.value.replace(/[^0-9kK]/g, '').toUpperCase();
+        
+        if (value.length > 9) {
+            value = value.slice(0, 9);
+        }
+
         if (value.length > 1) {
             let body = value.slice(0, -1);
             let dv = value.slice(-1);
