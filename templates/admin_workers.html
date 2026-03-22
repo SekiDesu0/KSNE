@@ -25,7 +25,7 @@
     <div class="card-body">
         <form method="POST" action="{{ url_for('manage_workers') }}">
             <div class="row g-3">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">RUT</label>
                     <input type="text" class="form-control" name="rut" id="rutInput" placeholder="12.345.678-9" value="{{ form.get('rut', '') }}" required>
                 </div>
@@ -33,7 +33,7 @@
                     <label class="form-label">Nombre Completo</label>
                     <input type="text" class="form-control" name="name" value="{{ form.get('name', '') }}" required>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Teléfono</label>
                     <input type="text" class="form-control" name="phone" id="phoneInput" placeholder="9 1234 5678" value="{{ form.get('phone', '') }}" required>
                 </div>
@@ -44,6 +44,13 @@
                         {% for mod in modulos %}
                             <option value="{{ mod[0] }}">{{ mod[2] }} - {{ mod[1] }}</option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Jornada</label>
+                    <select class="form-select" name="tipo" required>
+                        <option value="Full Time" {% if form.get('tipo') == 'Full Time' %}selected{% endif %}>Full Time</option>
+                        <option value="Part Time" {% if form.get('tipo') == 'Part Time' %}selected{% endif %}>Part Time</option>
                     </select>
                 </div>
             </div>
@@ -61,6 +68,7 @@
                     <th>Nombre</th>
                     <th>Teléfono</th>
                     <th>Módulo</th>
+                    <th>Tipo</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
@@ -71,6 +79,11 @@
                     <td class="align-middle">{{ worker[2] }}</td>
                     <td class="align-middle">{{ worker[3] }}</td>
                     <td class="align-middle"><span class="badge bg-info text-dark">{{ worker[4] }}</span></td>
+                    <td class="align-middle">
+                        <span class="badge {% if worker[6] == 'Full Time' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ worker[6] }}
+                        </span>
+                    </td>
                     <td class="text-end">
                         <button type="button" 
                                 class="btn btn-primary btn-sm btn-edit-sm" 
@@ -80,7 +93,8 @@
                                 data-rut="{{ worker[1] }}"
                                 data-name="{{ worker[2] }}"
                                 data-phone="{{ worker[3] }}"
-                                data-modulo="{{ worker[5] }}">
+                                data-modulo="{{ worker[5] }}"
+                                data-tipo="{{ worker[6] }}">
                             <i class="bi bi-pencil"></i>
                         </button>
                         
@@ -99,7 +113,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center py-3 text-muted">No hay trabajadores registrados.</td>
+                    <td colspan="6" class="text-center py-3 text-muted">No hay trabajadores registrados.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -143,6 +157,7 @@
                 editWorkerModal.querySelector('#edit_worker_name').value = name;
                 editWorkerModal.querySelector('#edit_worker_phone').value = button.getAttribute('data-phone');
                 editWorkerModal.querySelector('#edit_worker_modulo').value = button.getAttribute('data-modulo');
+                editWorkerModal.querySelector('#edit_worker_tipo').value = button.getAttribute('data-tipo'); 
             }
         });
     }

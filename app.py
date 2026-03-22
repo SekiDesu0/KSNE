@@ -80,7 +80,7 @@ def populateDefaults():
             for name, price, commission in productos_data:
                 c.execute("INSERT INTO productos (zona_id, name, price, commission) VALUES (?, ?, ?, ?)", 
                         (zona_id, name, price, commission))
-                        
+
         c.execute("SELECT COUNT(*) FROM workers WHERE is_admin = 0")
         if c.fetchone()[0] == 0:
             c.execute("SELECT id FROM modulos LIMIT 2")
@@ -93,16 +93,16 @@ def populateDefaults():
                 default_pass = generate_password_hash("123456")
                 
                 workers_data = [
-                    ("11.111.111-1", "Juan Perez", "+56 9 1111 1111", default_pass, 0, mod_1),
-                    ("22.222.222-2", "Maria Gonzalez", "+56 9 2222 2222", default_pass, 0, mod_1),
-                    ("33.333.333-3", "Pedro Soto", "+56 9 3333 3333", default_pass, 0, mod_2),
-                    ("44.444.444-4", "Ana Silva", "+56 9 4444 4444", default_pass, 0, mod_2)
+                    ("11.111.111-1", "Juan Perez", "+56 9 1111 1111", default_pass, 0, mod_1, "Full Time"),
+                    ("22.222.222-2", "Maria Gonzalez", "+56 9 2222 2222", default_pass, 0, mod_1, "Part Time"),
+                    ("33.333.333-3", "Pedro Soto", "+56 9 3333 3333", default_pass, 0, mod_2, "Full Time"),
+                    ("44.444.444-4", "Ana Silva", "+56 9 4444 4444", default_pass, 0, mod_2, "Part Time")
                 ]
                 
                 for w in workers_data:
-                    c.execute("INSERT OR IGNORE INTO workers (rut, name, phone, password_hash, is_admin, modulo_id) VALUES (?, ?, ?, ?, ?, ?)", w)
-                conn.commit()
-        
+                    c.execute("INSERT OR IGNORE INTO workers (rut, name, phone, password_hash, is_admin, modulo_id, tipo) VALUES (?, ?, ?, ?, ?, ?, ?)", w)
+                
+                conn.commit()        
     conn.close()
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -130,7 +130,6 @@ def init_db():
                   FOREIGN KEY (zona_id) REFERENCES zonas(id))''')
 
     # 4. Workers (Now tied to a Modulo)
-    # Added modulo_id. It can be NULL for the system admin.
     c.execute('''CREATE TABLE IF NOT EXISTS workers
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   rut TEXT UNIQUE NOT NULL,
@@ -139,6 +138,7 @@ def init_db():
                   password_hash TEXT NOT NULL,
                   is_admin BOOLEAN DEFAULT 0,
                   modulo_id INTEGER,
+                  tipo TEXT DEFAULT 'Full Time',
                   FOREIGN KEY (modulo_id) REFERENCES modulos(id))''')
     
     # 5. Rendiciones (The main form headers)
@@ -404,6 +404,7 @@ def manage_workers():
         raw_phone = request.form['phone']
         name = request.form['name'].strip()
         modulo_id = request.form.get('modulo_id')
+        tipo = request.form.get('tipo', 'Full Time')
         form_data = request.form 
 
         if not validate_rut(raw_rut):
@@ -420,8 +421,8 @@ def manage_workers():
             
             try:
                 # Now inserting modulo_id
-                c.execute("INSERT INTO workers (rut, name, phone, password_hash, is_admin, modulo_id) VALUES (?, ?, ?, ?, 0, ?)", 
-                          (rut, name, phone, p_hash, modulo_id))
+                c.execute("INSERT INTO workers (rut, name, phone, password_hash, is_admin, modulo_id, tipo) VALUES (?, ?, ?, ?, 0, ?, ?)", 
+                          (rut, name, phone, p_hash, modulo_id, tipo))
                 conn.commit()
                 flash(f"Trabajador guardado. Contraseña temporal: <strong>{password}</strong>", "success")
                 return redirect(url_for('manage_workers')) 
@@ -429,7 +430,7 @@ def manage_workers():
                 flash("El RUT ya existe en el sistema.", "danger")
 
     # Fetch workers and JOIN their module name
-    c.execute('''SELECT w.id, w.rut, w.name, w.phone, m.name, w.modulo_id 
+    c.execute('''SELECT w.id, w.rut, w.name, w.phone, m.name, w.modulo_id, w.tipo 
                  FROM workers w 
                  LEFT JOIN modulos m ON w.modulo_id = m.id 
                  WHERE w.is_admin = 0''')
@@ -456,6 +457,7 @@ def edit_worker(id):
         raw_phone = request.form['phone']
         name = request.form['name'].strip()
         modulo_id = request.form.get('modulo_id')
+        tipo = request.form.get('tipo', 'Full Time')
 
         if not validate_phone(raw_phone):
             flash("El teléfono debe tener 9 dígitos válidos.", "danger")
@@ -464,8 +466,8 @@ def edit_worker(id):
             flash("Debes seleccionar un módulo.", "danger")
             return redirect(url_for('edit_worker', id=id))
 
-        c.execute("UPDATE workers SET name=?, phone=?, modulo_id=? WHERE id=?", 
-                  (name, format_phone(raw_phone), modulo_id, id))
+        c.execute("UPDATE workers SET name=?, phone=?, modulo_id=?, tipo=? WHERE id=?", 
+                  (name, format_phone(raw_phone), modulo_id, tipo, id))
         conn.commit()
         flash("Trabajador actualizado exitosamente.", "success")
         conn.close()

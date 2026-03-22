@@ -33,7 +33,6 @@ services:
         restart: unless-stopped
 ```
 # TODO preguntas:
-- ver si gastos debe o no restar del total
 - ver si tienen como turnos fijos para setear un horario
 - ver si trabajan mas de 2 personas maximo al dia
 
@@ -41,7 +40,6 @@ services:
 - añadir si es part time o full time en la tabla de trabajadores para ver si necesitan comisiones
 - separar productos para tiendas
 - limpiar requirements.txt
-- hacer placeholders funcionales (si dice 0 que el sistema lea 0 no null)
 - mostrar rendiciones antiguas
 - hacer como un hub del trabajador qu permita ver antiguos y crear uno nuevo
 - mostrar total de ventas con graficos en el index(?)
