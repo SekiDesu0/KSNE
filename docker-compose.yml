@@ -1,0 +1,11 @@
+name: rendiciones
+services:
+    rendiciones:
+        ports:
+            - 5001:5000
+        volumes:
+            - YOUR_PATH/rendiciones/db:/app/db
+            - YOUR_PATH/rendiciones/static/cache:/app/static/cache
+        container_name: rendiciones-server
+        image: rendiciones:latest
+        restart: unless-stopped
