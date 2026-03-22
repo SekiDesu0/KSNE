@@ -146,6 +146,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS rendiciones
                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
                 worker_id INTEGER NOT NULL,
+                worker_comision BOOLEAN DEFAULT 1,
                 companion_id INTEGER,
                 modulo_id INTEGER NOT NULL,
                 fecha DATE NOT NULL,
@@ -153,6 +154,7 @@ def init_db():
                 hora_salida TEXT NOT NULL,
                 companion_hora_entrada TEXT,
                 companion_hora_salida TEXT,
+                companion_comision BOOLEAN DEFAULT 0,
                 venta_debito INTEGER DEFAULT 0,
                 venta_credito INTEGER DEFAULT 0,
                 venta_mp INTEGER DEFAULT 0,
@@ -299,7 +301,8 @@ def worker_dashboard():
     c.execute('''
         SELECT r.id, r.fecha, w.name, m.name,
             r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-            c_w.name, r.worker_id, r.companion_id, r.modulo_id
+            c_w.name, r.worker_id, r.companion_id, r.modulo_id,
+            r.worker_comision, r.companion_comision
         FROM rendiciones r
         JOIN workers w ON r.worker_id = w.id
         JOIN modulos m ON r.modulo_id = m.id
@@ -387,15 +390,27 @@ def new_rendicion():
             flash("Error: Todos los campos obligatorios deben estar rellenos.", "danger")
             return redirect(url_for('new_rendicion'))
 
+        # --- NUEVO: Calcular comisiones por defecto según jornada ---
+        c.execute("SELECT tipo FROM workers WHERE id = ?", (session['user_id'],))
+        worker_tipo = c.fetchone()[0]
+        worker_comision = 1 if worker_tipo == 'Full Time' else 0
+
+        companion_comision = 0
+        if companion_id:
+            c.execute("SELECT tipo FROM workers WHERE id = ?", (companion_id,))
+            comp_tipo = c.fetchone()
+            if comp_tipo and comp_tipo[0] == 'Full Time':
+                companion_comision = 1
+
         total_digital = debito + credito + mp
         total_ventas_general = total_digital + efectivo
 
         c.execute('''INSERT INTO rendiciones 
                     (worker_id, companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                    venta_debito, venta_credito, venta_mp, venta_efectivo, gastos, observaciones) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                    venta_debito, venta_credito, venta_mp, venta_efectivo, gastos, observaciones, worker_comision, companion_comision) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                     (session['user_id'], companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                debito, credito, mp, efectivo, gastos, obs))
+                debito, credito, mp, efectivo, gastos, obs, worker_comision, companion_comision))
         rendicion_id = c.lastrowid
 
         for key, value in request.form.items():
@@ -746,7 +761,8 @@ def admin_rendiciones():
     c.execute('''
             SELECT r.id, r.fecha, w.name, m.name,
                 r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-                c_w.name, r.worker_id, r.companion_id, r.modulo_id
+                c_w.name, r.worker_id, r.companion_id, r.modulo_id,
+                r.worker_comision, r.companion_comision
             FROM rendiciones r
             JOIN workers w ON r.worker_id = w.id
             JOIN modulos m ON r.modulo_id = m.id
@@ -822,6 +838,9 @@ def edit_rendicion(id):
     efectivo = request.form.get('venta_efectivo', '0').replace('.', '')
     gastos = request.form.get('gastos', '0').replace('.', '')
     observaciones = request.form.get('observaciones', '').strip()
+    
+    worker_comision = 1 if request.form.get('worker_comision') else 0
+    companion_comision = 1 if request.form.get('companion_comision') else 0
 
     try:
         debito = int(debito) if debito else 0
@@ -839,10 +858,10 @@ def edit_rendicion(id):
     c.execute('''
         UPDATE rendiciones 
         SET fecha=?, worker_id=?, modulo_id=?, companion_id=?,
-            venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?
+            venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?,
+            worker_comision=?, companion_comision=?
         WHERE id=?
-    ''', (fecha, worker_id, modulo_id, companion_id, debito, credito, mp, efectivo, gastos, observaciones, id))
-    
+    ''', (fecha, worker_id, modulo_id, companion_id, debito, credito, mp, efectivo, gastos, observaciones, worker_comision, companion_comision, id))    
     conn.commit()
     conn.close()
 
@@ -889,10 +908,11 @@ def report_modulo_periodo(modulo_id):
 
     # 1. Obtener finanzas (pagos y gastos) agrupadas por día
     c.execute('''
-        SELECT strftime('%d', fecha) as dia,
-               SUM(venta_debito), SUM(venta_credito), SUM(venta_mp), SUM(venta_efectivo), SUM(gastos)
-        FROM rendiciones
-        WHERE modulo_id = ? AND strftime('%m', fecha) = ? AND strftime('%Y', fecha) = ?
+        SELECT strftime('%d', r.fecha) as dia,
+               SUM(ri.cantidad * ri.comision_historica * CASE WHEN r.worker_comision = 1 OR r.companion_comision = 1 THEN 1 ELSE 0 END) as comision_total
+        FROM rendicion_items ri
+        JOIN rendiciones r ON ri.rendicion_id = r.id
+        WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
         GROUP BY dia
     ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
     finanzas_db = c.fetchall()

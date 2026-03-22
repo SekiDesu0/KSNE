@@ -188,7 +188,13 @@
                                             <tr>
                                                 <td colspan="3" class="text-end fw-bold">Total Calculado por Sistema:</td>
                                                 <td class="text-end fw-bold fs-6">${{ "{:,.0f}".format(total_calculado or 0).replace(',', '.') }}</td>
-                                                <td class="text-end fw-bold text-success fs-6">${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}</td>
+                                                <td class="text-end fw-bold text-success fs-6">
+                                                    {% if not rendicion[14] and not rendicion[15] %}
+                                                        <span class="text-decoration-line-through text-muted">${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}</span>
+                                                    {% else %}
+                                                        ${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}
+                                                    {% endif %}
+                                                </td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -206,12 +212,23 @@
                                     <dd class="col-sm-7">{{ rendicion[1] }}</dd>
                                     
                                     <dt class="col-sm-5 text-muted">Trabajador</dt>
-                                    <dd class="col-sm-7">{{ rendicion[2] }}</dd>
+                                    <dd class="col-sm-7">{{ rendicion[2] }}
+                                        {% if session.get('is_admin') %}
+                                        <span class="badge {% if rendicion[14] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
+                                            {% if rendicion[14] %}$ Sí{% else %}$ No{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </dd>
 
                                     <dt class="col-sm-5 text-muted">Acompañante</dt>
                                     <dd class="col-sm-7">
                                         {% if rendicion[10] %}
                                             {{ rendicion[10] }}
+                                            {% if session.get('is_admin') %}
+                                            <span class="badge {% if rendicion[15] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
+                                                {% if rendicion[15] %}$ Sí{% else %}$ No{% endif %}
+                                            </span>
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted italic small">Sin acompañante</span>
                                         {% endif %}
@@ -309,17 +326,24 @@
                                     <option value="{{ w[0] }}" {% if w[0] == rendicion[11] %}selected{% endif %}>{{ w[1] }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" role="switch" name="worker_comision" id="wc_{{ rendicion[0] }}" {% if rendicion[14] %}checked{% endif %}>
+                                <label class="form-check-label text-warning small" for="wc_{{ rendicion[0] }}"><i class="bi bi-star me-1"></i>Recibe comisión</label>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Acompañante</label>
-                            <select class="form-select" name="companion_id">
+                            <select class="form-select" name="companion_id" onchange="document.getElementById('comp_com_div_{{ rendicion[0] }}').style.display = this.value ? 'block' : 'none';">
                                 <option value="">Sin acompañante</option>
                                 {% for w in workers %}
                                     <option value="{{ w[0] }}" {% if w[0] == rendicion[12] %}selected{% endif %}>{{ w[1] }}</option>
                                 {% endfor %}
                             </select>
+                            <div class="form-check form-switch mt-2" id="comp_com_div_{{ rendicion[0] }}" {% if not rendicion[12] %}style="display:none;"{% endif %}>
+                                <input class="form-check-input" type="checkbox" role="switch" name="companion_comision" id="cc_{{ rendicion[0] }}" {% if rendicion[15] %}checked{% endif %}>
+                                <label class="form-check-label text-warning small" for="cc_{{ rendicion[0] }}"><i class="bi bi-star me-1"></i>Recibe comisión</label>
+                            </div>
                         </div>
-                    </div>
 
                     <h6 class="border-bottom pb-2 text-success">Declaración de Dinero</h6>
                     <div class="row g-3">
