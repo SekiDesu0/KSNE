@@ -80,7 +80,28 @@ def populateDefaults():
             for name, price, commission in productos_data:
                 c.execute("INSERT INTO productos (zona_id, name, price, commission) VALUES (?, ?, ?, ?)", 
                         (zona_id, name, price, commission))
-        conn.commit()
+                        
+        c.execute("SELECT COUNT(*) FROM workers WHERE is_admin = 0")
+        if c.fetchone()[0] == 0:
+            c.execute("SELECT id FROM modulos LIMIT 2")
+            modulos_ids = c.fetchall()
+            
+            if len(modulos_ids) >= 2:
+                mod_1 = modulos_ids[0][0]
+                mod_2 = modulos_ids[1][0]
+                
+                default_pass = generate_password_hash("123456")
+                
+                workers_data = [
+                    ("11.111.111-1", "Juan Perez", "+56 9 1111 1111", default_pass, 0, mod_1),
+                    ("22.222.222-2", "Maria Gonzalez", "+56 9 2222 2222", default_pass, 0, mod_1),
+                    ("33.333.333-3", "Pedro Soto", "+56 9 3333 3333", default_pass, 0, mod_2),
+                    ("44.444.444-4", "Ana Silva", "+56 9 4444 4444", default_pass, 0, mod_2)
+                ]
+                
+                for w in workers_data:
+                    c.execute("INSERT OR IGNORE INTO workers (rut, name, phone, password_hash, is_admin, modulo_id) VALUES (?, ?, ?, ?, ?, ?)", w)
+                conn.commit()
         
     conn.close()
 def init_db():
@@ -127,7 +148,10 @@ def init_db():
                 companion_id INTEGER,
                 modulo_id INTEGER NOT NULL,
                 fecha DATE NOT NULL,
-                turno TEXT NOT NULL,
+                hora_entrada TEXT NOT NULL,
+                hora_salida TEXT NOT NULL,
+                companion_hora_entrada TEXT,
+                companion_hora_salida TEXT,
                 venta_debito INTEGER DEFAULT 0,
                 venta_credito INTEGER DEFAULT 0,
                 venta_mp INTEGER DEFAULT 0,
@@ -285,18 +309,19 @@ def worker_dashboard():
     # 2. Manejo del envío del formulario
     if request.method == 'POST':
         fecha = request.form.get('fecha')
-        turno = request.form.get('turno')
+        hora_entrada = request.form.get('hora_entrada')
+        hora_salida = request.form.get('hora_salida')
+        companion_hora_entrada = request.form.get('companion_hora_entrada')
+        companion_hora_salida = request.form.get('companion_hora_salida')
         
-        # Función para limpiar puntos y validar presencia de datos
         def clean_and_validate(val):
             if val is None or val.strip() == "":
-                return 0  # <--- Cambiado de None a 0
+                return 0
             try:
                 return int(val.replace('.', ''))
             except ValueError:
-                return 0 # <--- Cambiado de None a 0
+                return 0
 
-        # Captura y validación de campos obligatorios
         debito = clean_and_validate(request.form.get('venta_debito'))
         credito = clean_and_validate(request.form.get('venta_credito'))
         mp = clean_and_validate(request.form.get('venta_mp'))
@@ -304,24 +329,24 @@ def worker_dashboard():
         gastos = clean_and_validate(request.form.get('gastos')) or 0
         obs = request.form.get('observaciones', '').strip()
         companion_id = request.form.get('companion_id')
+        
         if companion_id == "":
             companion_id = None
+            companion_hora_entrada = None
+            companion_hora_salida = None
 
-        # VERIFICACIÓN: Todos los campos de venta deben estar rellenos
-        if debito is None or credito is None or mp is None or efectivo is None or not fecha or not turno:
-            flash("Error: Todos los campos (Fecha, Turno, Tarjeta, MP y Efectivo) son obligatorios. Use 0 si no hubo ventas.", "danger")
+        if debito is None or credito is None or mp is None or efectivo is None or not fecha or not hora_entrada or not hora_salida:
+            flash("Error: Todos los campos obligatorios deben estar rellenos.", "danger")
             return redirect(url_for('worker_dashboard'))
 
-        # CÁLCULOS ADICIONALES (Para lógica de negocio o auditoría futura)
         total_digital = debito + credito + mp
         total_ventas_general = total_digital + efectivo
 
-        # Insertar Cabecera de Rendición
         c.execute('''INSERT INTO rendiciones 
-                    (worker_id, companion_id, modulo_id, fecha, turno, 
+                    (worker_id, companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
                     venta_debito, venta_credito, venta_mp, venta_efectivo, gastos, observaciones) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                    (session['user_id'], companion_id, modulo_id, fecha, turno, 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                    (session['user_id'], companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
                 debito, credito, mp, efectivo, gastos, obs))
         rendicion_id = c.lastrowid
 
@@ -672,7 +697,7 @@ def admin_rendiciones():
     
     # Añadimos worker_id (11), companion_id (12) y modulo_id (13) a la consulta
     c.execute('''
-            SELECT r.id, r.fecha, w.name, m.name, r.turno,
+            SELECT r.id, r.fecha, w.name, m.name,
                 r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
                 c_w.name, r.worker_id, r.companion_id, r.modulo_id
             FROM rendiciones r
@@ -736,9 +761,7 @@ def delete_rendicion(id):
 @app.route('/admin/rendiciones/edit/<int:id>', methods=['POST'])
 @admin_required
 def edit_rendicion(id):
-    # Campos de cabecera
     fecha = request.form.get('fecha')
-    turno = request.form.get('turno')
     worker_id = request.form.get('worker_id')
     modulo_id = request.form.get('modulo_id')
     companion_id = request.form.get('companion_id')
@@ -746,7 +769,6 @@ def edit_rendicion(id):
     if companion_id == "":
         companion_id = None
 
-    # ¡ADIÓS venta_tarjeta! Capturamos débito y crédito separados
     debito = request.form.get('venta_debito', '0').replace('.', '')
     credito = request.form.get('venta_credito', '0').replace('.', '')
     mp = request.form.get('venta_mp', '0').replace('.', '')
@@ -767,13 +789,12 @@ def edit_rendicion(id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # Actualizamos los nombres de las columnas en el UPDATE
     c.execute('''
         UPDATE rendiciones 
-        SET fecha=?, turno=?, worker_id=?, modulo_id=?, companion_id=?,
+        SET fecha=?, worker_id=?, modulo_id=?, companion_id=?,
             venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?
         WHERE id=?
-    ''', (fecha, turno, worker_id, modulo_id, companion_id, debito, credito, mp, efectivo, gastos, observaciones, id))
+    ''', (fecha, worker_id, modulo_id, companion_id, debito, credito, mp, efectivo, gastos, observaciones, id))
     
     conn.commit()
     conn.close()

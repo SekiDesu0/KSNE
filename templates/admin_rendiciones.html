@@ -25,23 +25,22 @@
                     <th>Fecha</th>
                     <th>Trabajador</th>
                     <th>Módulo</th>
-                    <th>Turno</th>
                     <th>Total Declarado</th>
                     <th>Gastos</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
-<tbody>
+           <tbody>
                 {% for r in rendiciones %}
                 <tr>
                     <td class="align-middle">{{ r[1] }}</td>
                     <td class="align-middle">{{ r[2] }}</td>
                     <td class="align-middle"><span class="badge bg-info text-dark">{{ r[3] }}</span></td>
-                    <td class="align-middle">{{ r[4] }}</td>
+                    
                     <td class="align-middle">
-                        ${{ "{:,.0f}".format((r[5] or 0) + (r[6] or 0) + (r[7] or 0) + (r[8] or 0)).replace(',', '.') }}
+                        ${{ "{:,.0f}".format((r[4] or 0) + (r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}
                     </td>
-                    <td class="align-middle text-danger">${{ "{:,.0f}".format(r[9] or 0).replace(',', '.') }}</td>
+                    <td class="align-middle text-danger">${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}</td>
                     <td class="text-end">
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#viewRendicion{{ r[0] }}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
@@ -49,7 +48,7 @@
                             <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteRendicion{{ r[0] }}" title="Eliminar Rendición"><i class="bi bi-trash"></i></button>
                         </div>
 
-                        {{ rendicion_detail_modal(r, r[15], r[16], r[17]) }}
+                        {{ rendicion_detail_modal(r, r[14], r[15], r[16]) }}
                         {{ edit_rendicion_modal(r, workers, modulos) }}
                         
                         {{ confirm_modal(
@@ -64,7 +63,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">Aún no hay rendiciones enviadas.</td>
+                    <td colspan="6" class="text-center py-4 text-muted">Aún no hay rendiciones enviadas.</td>
                 </tr>
                 {% endfor %}
             </tbody>

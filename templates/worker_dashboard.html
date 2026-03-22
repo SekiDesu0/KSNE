@@ -30,27 +30,38 @@
         <div class="card-header bg-primary text-white">Datos del Turno</div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Fecha de Venta</label>
                     <input type="date" class="form-control" name="fecha" value="{{ today }}" required>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Turno</label>
-                    <select class="form-select" name="turno" required>
-                        <option value="" disabled selected>Seleccionar...</option>
-                        <option value="Primer Turno">Primer Turno</option>
-                        <option value="Segundo Turno">Segundo Turno</option>
-                        <option value="Part Time">Part Time</option>
-                    </select>
+                <div class="col-md-4">
+                    <label class="form-label">Entrada</label>
+                    <input type="time" class="form-control" name="hora_entrada" required>
                 </div>
-                <div class="col-md-12">
+                <div class="col-md-4">
+                    <label class="form-label">Salida</label>
+                    <input type="time" class="form-control" name="hora_salida" required>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label">Acompañante (Opcional)</label>
-                    <select class="form-select" name="companion_id">
+                    <select class="form-select" name="companion_id" id="companion_select">
                         <option value="">Trabajando solo / Sin acompañante</option>
                         {% for worker in otros_trabajadores %}
                             <option value="{{ worker[0] }}">{{ worker[1] }}</option>
                         {% endfor %}
                     </select>
+                </div>
+                <div class="col-md-6" id="companion_times_div" style="display: none;">
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label">Entrada Acompañante</label>
+                            <input type="time" class="form-control" name="companion_hora_entrada" id="comp_in">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Salida Acompañante</label>
+                            <input type="time" class="form-control" name="companion_hora_salida" id="comp_out">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -110,7 +121,7 @@
         </div>
     </div>
 
-    <div class="card mb-4 shadow-sm border-info">
+<div class="card mb-4 shadow-sm border-info">
         <div class="card-header bg-info text-dark">Resumen Financiero</div>
         <div class="card-body">
             <div class="row g-3 mb-4">
@@ -143,32 +154,41 @@
                     </div>
                 </div>
             </div>
-            <div class="row g-3 mb-4 p-3 bg-body-secondary rounded shadow-sm">
-                <div class="col-md-4">
-                    <label class="form-label text-info fw-bold">Total Digital (Tarjeta + MP)</label>
+            
+            <div class="row g-3 p-3 bg-body-secondary rounded shadow-sm">
+                <div class="col-md-6">
+                    <label class="form-label text-info fw-bold">Total Digital (Tarjetas + MP)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-info text-white border-info">$</span>
                         <input type="text" class="form-control bg-dark-subtle fw-bold" placeholder="0" id="total_digital" readonly>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label text-danger fw-bold">Gastos del Módulo</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-danger text-white border-danger">-$</span>
-                        <input type="text" class="form-control money-input sale-input" name="gastos" id="gastos" placeholder="0">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label text-success fw-bold">Total Ventas (Neto)</label>
+                <div class="col-md-6">
+                    <label class="form-label text-success fw-bold">Total Ventas Declaradas</label>
                     <div class="input-group">
                         <span class="input-group-text bg-success text-white border-success">$</span>
                         <input type="text" class="form-control bg-dark-subtle fw-bold" placeholder="0" id="total_general" readonly>
                     </div>
                 </div>
             </div>
-            <div class="mt-3">
-                <label class="form-label">Observaciones / Concepto de Gastos</label>
-                <textarea class="form-control" name="observaciones" rows="2" placeholder="Si hubo gastos, anota el motivo aquí..."></textarea>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-danger">
+        <div class="card-header bg-danger text-white">Gastos y Observaciones</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label text-danger fw-bold">Monto de Gastos</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-danger text-white border-danger">$</span>
+                        <input type="text" class="form-control money-input" name="gastos" id="gastos" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Observaciones / Motivo</label>
+                    <textarea class="form-control" name="observaciones" rows="2" placeholder="Si hubo gastos o necesitas reportar algo, anótalo aquí..."></textarea>
+                </div>
             </div>
         </div>
     </div>
@@ -196,6 +216,25 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    document.getElementById('companion_select').addEventListener('change', function() {
+        const timeDiv = document.getElementById('companion_times_div');
+        const compIn = document.getElementById('comp_in');
+        const compOut = document.getElementById('comp_out');
+        if (this.value) {
+            timeDiv.style.display = 'block';
+            compIn.required = true;
+            compOut.required = true;
+        } else {
+            timeDiv.style.display = 'none';
+            compIn.required = false;
+            compOut.required = false;
+            compIn.value = '';
+            compOut.value = '';
+        }
+    });
+</script>
+
 <script>
     const inputsCantidad = document.querySelectorAll('input[name^="qty_"]');
     const displayTotalProductos = document.getElementById('total_productos_calc');
@@ -295,13 +334,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const credito = getVal('venta_credito');
         const mp = getVal('venta_mp');
         const efectivo = getVal('venta_efectivo');
-        const gastos = getVal('gastos');
 
         const totalDigital = debito + credito + mp;
-        const totalGeneral = (totalDigital + efectivo) - gastos;
+        const totalGeneral = totalDigital + efectivo; // Ya no restamos los gastos aquí
 
-        displayDigital.value = totalDigital.toLocaleString('es-CL');
-        displayGeneral.value = totalGeneral.toLocaleString('es-CL');
+        document.getElementById('total_digital').value = totalDigital.toLocaleString('es-CL');
+        document.getElementById('total_general').value = totalGeneral.toLocaleString('es-CL');
     }
 
     inputsVenta.forEach(input => {

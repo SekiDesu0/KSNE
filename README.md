@@ -34,8 +34,11 @@ services:
 ```
 # TODO preguntas:
 - ver si gastos debe o no restar del total
+- ver si tienen como turnos fijos para setear un horario
+- ver si trabajan mas de 2 personas maximo al dia
 
 # TODO general:
+- añadir si es part time o full time en la tabla de trabajadores para ver si necesitan comisiones
 - separar productos para tiendas
 - limpiar requirements.txt
 - hacer placeholders funcionales (si dice 0 que el sistema lea 0 no null)
