@@ -39,24 +39,21 @@ services:
 
 # TODO general:
 - generar reportes y exportar a excel
-- sistema de comisiones para gente part time temporal(?)
 - tabla de productos vendidos durante el mes
 - formulario de cosas robadas
 - implementar horas extra?
 - implemetar calendario como el excel
 - arrglar colores en modo claro y oscuro
-- añadir si es part time o full time en la tabla de trabajadores para ver si necesitan comisiones
 - separar productos para tiendas
 - limpiar requirements.txt
 - mostrar rendiciones antiguas
-- hacer como un hub del trabajador qu permita ver antiguos y crear uno nuevo
 - mostrar total de ventas con graficos en el index(?)
 - mostrar ventas diarias por modulo y zona(?)
 - formulario de perdidas en el dashboard(?) o hub
 - categorias de productos (complementos, etc)
-- precio de prodcot por zona
-- proteccion contra borrado de zonas o modulos i ya estan asignados a algo
-- ahcer que contraseña autogerada force a crear una neva
+- precio de productos por zona
+- proteccion contra borrado de zonas o modulos si ya estan asignados a algo
+- hacer que contraseña autogenerada force a crear una nueva para el trabajador
 
 # TODO no prioritario:
 - dejar mas bonito las cosas de admin en media ventana o otros formatos
@@ -65,11 +62,6 @@ services:
 ## formulario
 - cantidad de boletas por metodo de pago
 - permitir subir foto de total gastos (boleta/factura)
-## otros
-- bloquear turno para otra persona si ya fue subido por otra persona
-- part time hora entrada y salida sin comisiones
-- ocaciones especiales permiten comisiones (en panel admin)
 
 # TODO happy candy:
-- total vendido
 - comision 2%
