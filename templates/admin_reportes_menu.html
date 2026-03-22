@@ -1,0 +1,117 @@
+{% extends "macros/base.html" %}
+
+{% block title %}Menú de Reportes - {{ modulo_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('admin_reportes_index') }}" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-arrow-left"></i> Volver a Módulos
+        </a>
+        <h2>Reportes: <span class="text-info">{{ modulo_name }}</span></h2>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 hover-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary text-white rounded p-3 me-3">
+                        <i class="bi bi-cash-coin fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Detalle de Ventas y Medios de Pago</h5>
+                </div>
+                <p class="text-muted small">Análisis detallado de ventas diarias, productos vendidos y consolidado mensual.</p>
+                <a href="{{ url_for('report_modulo_periodo', modulo_id=modulo_id) }}" class="btn btn-primary w-100">Generar Reporte</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 hover-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success text-white rounded p-3 me-3">
+                        <i class="bi bi-percent fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Comisiones</h5>
+                </div>
+                <p class="text-muted small">Cálculo de comisiones generadas por los trabajadores en este módulo.</p>
+                <button class="btn btn-outline-success w-100" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 hover-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning text-dark rounded p-3 me-3">
+                        <i class="bi bi-clock-history fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Control de Horarios</h5>
+                </div>
+                <p class="text-muted small">Registro de horas de entrada y salida de los trabajadores y acompañantes.</p>
+                <button class="btn btn-outline-warning w-100" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 hover-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-info text-dark rounded p-3 me-3">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Centros Comerciales</h5>
+                </div>
+                <p class="text-muted small">Reporte de datos exigidos por la administración del centro comercial.</p>
+                <button class="btn btn-outline-info w-100" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 hover-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-secondary text-white rounded p-3 me-3">
+                        <i class="bi bi-calculator fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Cálculo de IVA</h5>
+                </div>
+                <p class="text-muted small">Proyección de impuestos basados en las ventas declaradas.</p>
+                <button class="btn btn-outline-secondary w-100" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 hover-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-danger text-white rounded p-3 me-3">
+                        <i class="bi bi-shield-exclamation fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Robos y Mermas</h5>
+                </div>
+                <p class="text-muted small">Cuadratura de inventario y registro de pérdida de productos.</p>
+                <button class="btn btn-outline-danger w-100" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background-color: #1e2125; /* Fondo oscuro sutil */
+    }
+    .hover-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.25)!important;
+    }
+</style>
+{% endblock %}

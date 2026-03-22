@@ -1,0 +1,147 @@
+{% extends "macros/base.html" %}
+
+{% block title %}Reporte: Finanzas - {{ modulo_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .numeric-cell {
+        text-align: right;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: 500;
+    }
+    .total-column {
+        font-weight: bold;
+        background-color: #e9ecef !important;
+    }
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background-color: #f8f9fa !important;
+        border-right: 2px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('admin_reportes_menu_modulo', modulo_id=request.view_args.get('modulo_id', 0)) }}" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-arrow-left"></i> Volver al Menú
+        </a>
+        <h2>Resumen Financiero y Medios de Pago</h2>
+    </div>
+    <div class="text-end">
+        <div><strong class="text-primary fs-5">{{ modulo_name }}</strong></div>
+        <div class="text-muted"><small>Período: {{ mes_nombre }}</small></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="text-uppercase small mb-1 opacity-75">Venta Total Mensual</div>
+                <h3 class="card-title mb-0">${{ "{:,.0f}".format(totales_mes.venta_total).replace(',', '.') }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-dark shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="text-uppercase small mb-1 opacity-75">Comisiones Generadas</div>
+                <h3 class="card-title mb-0">${{ "{:,.0f}".format(totales_mes.comision).replace(',', '.') }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="text-uppercase small mb-1 opacity-75">Total Gastos</div>
+                <h3 class="card-title mb-0">-${{ "{:,.0f}".format(totales_mes.gastos).replace(',', '.') }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="text-uppercase small mb-1 opacity-75">Días Trabajados</div>
+                <h3 class="card-title mb-0">{{ dias_activos }} <span class="fs-6 fw-normal">/ 31</span></h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center pb-0">
+        <span class="fw-bold text-muted text-uppercase"><i class="bi bi-calendar3 me-1"></i> Desglose Diario</span>
+        
+        <button class="btn btn-success btn-sm shadow-sm" onclick="alert('Próximamente: Esto descargará un Excel con el detalle de todos los productos vendidos por día.')">
+            <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar Detalle Completo (.xlsx)
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover table-sm mb-0 text-nowrap" style="font-size: 0.85rem;">
+                <thead class="table-dark text-center align-middle">
+                    <tr>
+                        <th class="sticky-col py-2" rowspan="2">Día</th> 
+                        <th class="py-2 total-column text-success" rowspan="2">VENTA TOTAL</th>
+                        <th class="py-2 text-info" rowspan="2">COMISIÓN</th>
+                        <th class="py-2 text-danger" rowspan="2">GASTOS</th>
+                        <th class="py-1 border-bottom-0" colspan="4">MEDIOS DE PAGO</th>
+                    </tr>
+                    <tr>
+                        <th class="py-1 text-muted">Crédito</th>
+                        <th class="py-1 text-muted">Débito</th>
+                        <th class="py-1 text-muted">Mercado Pago</th>
+                        <th class="py-1 text-muted">Efectivo/Dep.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dia in dias_en_periodo %}
+                        {% set d = data_por_dia[dia] %}
+                        <tr>
+                            <td class="align-middle sticky-col numeric-cell fw-bold text-center">{{ dia }}</td>
+                            
+                            <td class="align-middle numeric-cell total-column text-success">
+                                {{ ("$" ~ "{:,.0f}".format(d.venta_total).replace(',', '.')) if d.venta_total > 0 else "-" }}
+                            </td>
+                            <td class="align-middle numeric-cell text-info fw-bold">
+                                {{ ("$" ~ "{:,.0f}".format(d.comision).replace(',', '.')) if d.comision > 0 else "-" }}
+                            </td>
+                            <td class="align-middle numeric-cell text-danger">
+                                {{ ("-$" ~ "{:,.0f}".format(d.gastos).replace(',', '.')) if d.gastos > 0 else "-" }}
+                            </td>
+                            
+                            <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.credito).replace(',', '.')) if d.credito > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.debito).replace(',', '.')) if d.debito > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.mp).replace(',', '.')) if d.mp > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.efectivo).replace(',', '.')) if d.efectivo > 0 else "-" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-group-divider fw-bold bg-dark text-white sticky-bottom">
+                    <tr>
+                        <td class="align-middle sticky-col py-2 text-center">TOTAL</td>
+                        <td class="align-middle numeric-cell py-2 fs-6 text-success border-end border-light">
+                            ${{ "{:,.0f}".format(totales_mes.venta_total).replace(',', '.') }}
+                        </td>
+                        <td class="align-middle numeric-cell py-2 text-info">
+                            ${{ "{:,.0f}".format(totales_mes.comision).replace(',', '.') }}
+                        </td>
+                        <td class="align-middle numeric-cell py-2 text-danger border-end border-light">
+                            -${{ "{:,.0f}".format(totales_mes.gastos).replace(',', '.') }}
+                        </td>
+                        
+                        <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.credito).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.debito).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.mp).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.efectivo).replace(',', '.') }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "macros/base.html" %}
+
+{% block title %}Panel de Reportes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up text-primary me-2"></i>Panel de Reportes</h2>
+</div>
+
+<div class="mb-4">
+    <p class="text-muted">Selecciona un módulo para ver sus reportes disponibles.</p>
+</div>
+
+{% for zona_name, lista_modulos in modulos|groupby(2) %}
+    <div class="zona-section mb-5">
+        <h4 class="text-info border-bottom border-secondary pb-2 mb-4">
+            <i class="bi bi-geo-alt-fill me-2"></i>Zona: {{ zona_name }}
+        </h4>
+        
+        <div class="row g-4">
+            {% for mod in lista_modulos %}
+            <div class="col-md-4 col-sm-6">
+                <a href="{{ url_for('admin_reportes_menu_modulo', modulo_id=mod[0]) }}" class="text-decoration-none">
+                    <div class="card shadow-sm h-100 border-0 hover-shadow transition-all bg-dark-subtle">
+                        <div class="card-body text-center py-4">
+                            <div class="mb-3">
+                                <i class="bi bi-shop display-4 text-info"></i>
+                            </div>
+                            <h5 class="card-title text-body">{{ mod[1] }}</h5>
+                            <span class="badge bg-primary mt-2">Ver Reportes <i class="bi bi-arrow-right ms-1"></i></span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info">No hay módulos registrados en el sistema.</div>
+{% endfor %}
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.3)!important;
+        border-color: #0dcaf0 !important; /* Resalta en azul claro (info) al pasar el mouse */
+    }
+    .transition-all {
+        transition: all .3s ease-in-out;
+    }
+</style>
+{% endblock %}

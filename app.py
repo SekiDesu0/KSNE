@@ -6,6 +6,7 @@ import random
 import string
 from functools import wraps
 from datetime import date
+from collections import defaultdict
 
 app = Flask(__name__)
 app.secret_key = "super_secret_dev_key"
@@ -847,6 +848,123 @@ def edit_rendicion(id):
 
     flash("Rendición actualizada correctamente.", "success")
     return redirect(url_for('admin_rendiciones'))
+
+
+@app.route('/admin/reportes')
+@admin_required # Asumo que usas este decorador
+def admin_reportes_index():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    # Ahora hacemos un JOIN con zonas para poder agruparlos en la vista
+    c.execute('''
+        SELECT m.id, m.name, z.name 
+        FROM modulos m
+        JOIN zonas z ON m.zona_id = z.id
+        ORDER BY z.name, m.name
+    ''')
+    modulos = c.fetchall()
+    conn.close()
+    
+    return render_template('admin_reportes_index.html', modulos=modulos)
+
+@app.route('/admin/reportes/modulo/<int:modulo_id>/menu')
+@admin_required
+def admin_reportes_menu_modulo(modulo_id):
+    # Esta ruta muestra las opciones de reporte para un módulo específico
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+    modulo_info = c.fetchone()
+    conn.close()
+    
+    if not modulo_info:
+        flash("Módulo no encontrado.", "danger")
+        return redirect(url_for('admin_reportes_index'))
+        
+    modulo_name = modulo_info[0]
+    
+    return render_template('admin_reportes_menu.html', modulo_id=modulo_id, modulo_name=modulo_name)
+
+@app.route('/admin/reportes/modulo/<int:modulo_id>')
+@admin_required
+def report_modulo_periodo(modulo_id):
+    # Por defecto, mes actual
+    mes_actual = date.today().month
+    anio_actual = date.today().year
+    dias_en_periodo = [f'{d:02}' for d in range(1, 32)] # Rango de 31 días
+    
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+    modulo_info = c.fetchone()
+    if not modulo_info:
+        conn.close()
+        flash("Módulo no encontrado.", "danger")
+        return redirect(url_for('admin_reportes_index'))
+    modulo_name = modulo_info[0]
+
+    # 1. Obtener finanzas (pagos y gastos) agrupadas por día
+    c.execute('''
+        SELECT strftime('%d', fecha) as dia,
+               SUM(venta_debito), SUM(venta_credito), SUM(venta_mp), SUM(venta_efectivo), SUM(gastos)
+        FROM rendiciones
+        WHERE modulo_id = ? AND strftime('%m', fecha) = ? AND strftime('%Y', fecha) = ?
+        GROUP BY dia
+    ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
+    finanzas_db = c.fetchall()
+
+    # 2. Obtener comisiones agrupadas por día
+    c.execute('''
+        SELECT strftime('%d', r.fecha) as dia,
+               SUM(ri.cantidad * ri.comision_historica) as comision_total
+        FROM rendicion_items ri
+        JOIN rendiciones r ON ri.rendicion_id = r.id
+        WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
+        GROUP BY dia
+    ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
+    comisiones_db = c.fetchall()
+    
+    conn.close()
+
+    # 3. Estructurar los datos para la tabla web
+    data_por_dia = {dia: {'debito': 0, 'credito': 0, 'mp': 0, 'efectivo': 0, 'gastos': 0, 'comision': 0, 'venta_total': 0} for dia in dias_en_periodo}
+
+    for row in finanzas_db:
+        dia, debito, credito, mp, efectivo, gastos = row
+        venta_total = (debito or 0) + (credito or 0) + (mp or 0) + (efectivo or 0)
+        data_por_dia[dia].update({
+            'debito': debito or 0,
+            'credito': credito or 0,
+            'mp': mp or 0,
+            'efectivo': efectivo or 0,
+            'gastos': gastos or 0,
+            'venta_total': venta_total
+        })
+
+    for row in comisiones_db:
+        dia, comision = row
+        data_por_dia[dia]['comision'] = comision or 0
+
+    # 4. Calcular totales del mes para el Footer y las Tarjetas (KPIs)
+    totales_mes = {'debito': 0, 'credito': 0, 'mp': 0, 'efectivo': 0, 'gastos': 0, 'comision': 0, 'venta_total': 0}
+    dias_activos = 0
+    
+    for dia, datos in data_por_dia.items():
+        if datos['venta_total'] > 0 or datos['gastos'] > 0:
+            dias_activos += 1
+        for k in totales_mes.keys():
+            totales_mes[k] += datos[k]
+
+    return render_template('admin_report_modulo.html',
+                           modulo_name=modulo_name,
+                           mes_nombre=f'{mes_actual:02}/{anio_actual}',
+                           dias_en_periodo=dias_en_periodo,
+                           data_por_dia=data_por_dia,
+                           totales_mes=totales_mes,
+                           dias_activos=dias_activos)
 
 if __name__ == '__main__':
     init_db()
