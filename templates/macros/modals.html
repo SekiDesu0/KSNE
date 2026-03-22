@@ -158,39 +158,41 @@
                         <div class="card shadow-sm h-100">
                             <div class="card-header bg-secondary text-white">Productos Vendidos</div>
                             <div class="card-body p-0">
-                                <table class="table table-striped mb-0">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Producto</th>
-                                            <th class="text-center">Cant.</th>
-                                            <th class="text-end">Precio Un.</th>
-                                            <th class="text-end">Total Línea</th>
-                                            <th class="text-end">Comisión</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for item in items %}
-                                        <tr>
-                                            <td>{{ item[0] }}</td>
-                                            <td class="text-center fw-bold">{{ item[1] }}</td>
-                                            <td class="text-end text-muted">${{ "{:,.0f}".format(item[2]).replace(',', '.') }}</td>
-                                            <td class="text-end fw-bold">${{ "{:,.0f}".format(item[4]).replace(',', '.') }}</td>
-                                            <td class="text-end text-success">${{ "{:,.0f}".format(item[5]).replace(',', '.') }}</td>
-                                        </tr>
-                                        {% else %}
-                                        <tr>
-                                            <td colspan="5" class="text-center py-3">No se registraron productos en esta rendición.</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                    <tfoot class="table-group-divider">
-                                        <tr>
-                                            <td colspan="3" class="text-end fw-bold">Total Calculado por Sistema:</td>
-                                            <td class="text-end fw-bold fs-5">${{ "{:,.0f}".format(total_calculado or 0).replace(',', '.') }}</td>
-                                            <td class="text-end fw-bold text-success">${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                <div class="table-responsive">
+                                    <table class="table table-striped mb-0 text-nowrap">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th class="text-center">Cant.</th>
+                                                <th class="text-end">Precio Un.</th>
+                                                <th class="text-end">Total Línea</th>
+                                                <th class="text-end">Comisión</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items %}
+                                            <tr>
+                                                <td class="text-wrap" style="min-width: 180px;">{{ item[0] }}</td>
+                                                <td class="text-center fw-bold">{{ item[1] }}</td>
+                                                <td class="text-end text-muted">${{ "{:,.0f}".format(item[2]).replace(',', '.') }}</td>
+                                                <td class="text-end fw-bold">${{ "{:,.0f}".format(item[4]).replace(',', '.') }}</td>
+                                                <td class="text-end text-success">${{ "{:,.0f}".format(item[5]).replace(',', '.') }}</td>
+                                            </tr>
+                                            {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center py-3 text-wrap">No se registraron productos en esta rendición.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot class="table-group-divider">
+                                            <tr>
+                                                <td colspan="3" class="text-end fw-bold">Total Calculado por Sistema:</td>
+                                                <td class="text-end fw-bold fs-6">${{ "{:,.0f}".format(total_calculado or 0).replace(',', '.') }}</td>
+                                                <td class="text-end fw-bold text-success fs-6">${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -243,7 +245,7 @@
                                 </div>
 
                                 {% if total_declarado != total_calculado %}
-                                <div class="alert alert-warning mt-3 mb-0 py-2">
+                                <div class="alert alert-warning mt-3 mb-0 py-2 text-wrap text-break">
                                     <small>Discrepancia: El total declarado (${{ "{:,.0f}".format(total_declarado).replace(',', '.') }}) no coincide con la suma de los productos vendidos (${{ "{:,.0f}".format(total_calculado).replace(',', '.') }}).</small>
                                 </div>
                                 {% endif %}
@@ -259,7 +261,7 @@
                                 </div>
                                 <div>
                                     <span class="text-muted d-block mb-1">Observaciones:</span>
-                                    <p class="mb-0 bg-dark p-2 rounded border border-secondary" style="font-size: 0.9em;">
+                                    <p class="mb-0 bg-dark p-2 rounded border border-secondary text-wrap text-break" style="font-size: 0.9em;">
                                         {{ rendicion[9] if rendicion[9] else "Sin observaciones." }}
                                     </p>
                                 </div>
