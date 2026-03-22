@@ -868,25 +868,6 @@ def admin_reportes_index():
     
     return render_template('admin_reportes_index.html', modulos=modulos)
 
-@app.route('/admin/reportes/modulo/<int:modulo_id>/menu')
-@admin_required
-def admin_reportes_menu_modulo(modulo_id):
-    # Esta ruta muestra las opciones de reporte para un módulo específico
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    
-    c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-    modulo_info = c.fetchone()
-    conn.close()
-    
-    if not modulo_info:
-        flash("Módulo no encontrado.", "danger")
-        return redirect(url_for('admin_reportes_index'))
-        
-    modulo_name = modulo_info[0]
-    
-    return render_template('admin_reportes_menu.html', modulo_id=modulo_id, modulo_name=modulo_name)
-
 @app.route('/admin/reportes/modulo/<int:modulo_id>')
 @admin_required
 def report_modulo_periodo(modulo_id):

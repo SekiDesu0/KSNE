@@ -386,3 +386,112 @@
     </div>
 </div>
 {% endmacro %}
+
+{% macro reportes_menu_modal(modulo_id, modulo_name) %}
+<div class="modal fade" id="reportMenuModal{{ modulo_id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reportes: <span class="text-info">{{ modulo_name }}</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-body-tertiary text-start">
+                <div class="row g-4 mt-1 mb-3">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary text-white rounded p-3 me-3">
+                                        <i class="bi bi-cash-coin fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Detalle de Ventas</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Análisis detallado de ventas diarias, productos vendidos y consolidado mensual.</p>
+                                <a href="{{ url_for('report_modulo_periodo', modulo_id=modulo_id) }}" class="btn btn-primary w-100 mt-3">Generar Reporte</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-success text-white rounded p-3 me-3">
+                                        <i class="bi bi-percent fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Comisiones</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Cálculo de comisiones generadas por los trabajadores en este módulo.</p>
+                                <button class="btn btn-outline-success w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-warning text-dark rounded p-3 me-3">
+                                        <i class="bi bi-clock-history fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Control de Horarios</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Registro de horas de entrada y salida de los trabajadores y acompañantes.</p>
+                                <button class="btn btn-outline-warning w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-info text-dark rounded p-3 me-3">
+                                        <i class="bi bi-building fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Centros Comerciales</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Reporte de datos exigidos por la administración del centro comercial.</p>
+                                <button class="btn btn-outline-info w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-secondary text-white rounded p-3 me-3">
+                                        <i class="bi bi-calculator fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Cálculo de IVA</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Proyección de impuestos basados en las ventas declaradas.</p>
+                                <button class="btn btn-outline-secondary w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-danger text-white rounded p-3 me-3">
+                                        <i class="bi bi-shield-exclamation fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Robos y Mermas</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Cuadratura de inventario y registro de pérdida de productos.</p>
+                                <button class="btn btn-outline-danger w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

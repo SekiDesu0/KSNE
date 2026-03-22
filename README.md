@@ -38,6 +38,8 @@ services:
 - ver como funcionan los productos / precios de HC
 
 # TODO general:
+- generar reportes y exportar a excel
+- sistema de comisiones para gente part time temporal(?)
 - tabla de productos vendidos durante el mes
 - formulario de cosas robadas
 - implementar horas extra?
@@ -54,9 +56,10 @@ services:
 - categorias de productos (complementos, etc)
 - precio de prodcot por zona
 - proteccion contra borrado de zonas o modulos i ya estan asignados a algo
+- ahcer que contraseña autogerada force a crear una neva
 
-# TODO quizas:
-- generar reportes(?)
+# TODO no prioritario:
+- dejar mas bonito las cosas de admin en media ventana o otros formatos
 
 # TODO peppermint:
 ## formulario

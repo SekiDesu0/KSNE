@@ -1,4 +1,5 @@
 {% extends "macros/base.html" %}
+{% from "macros/modals.html" import reportes_menu_modal %}
 
 {% block title %}Panel de Reportes{% endblock %}
 
@@ -20,7 +21,7 @@
         <div class="row g-4">
             {% for mod in lista_modulos %}
             <div class="col-md-4 col-sm-6">
-                <a href="{{ url_for('admin_reportes_menu_modulo', modulo_id=mod[0]) }}" class="text-decoration-none">
+                <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportMenuModal{{ mod[0] }}">
                     <div class="card shadow-sm h-100 border-0 hover-shadow transition-all bg-dark-subtle">
                         <div class="card-body text-center py-4">
                             <div class="mb-3">
@@ -39,11 +40,25 @@
     <div class="alert alert-info">No hay módulos registrados en el sistema.</div>
 {% endfor %}
 
+{% for zona_name, lista_modulos in modulos|groupby(2) %}
+    {% for mod in lista_modulos %}
+        {{ reportes_menu_modal(mod[0], mod[1]) }}
+    {% endfor %}
+{% endfor %}
+
 <style>
     .hover-shadow:hover {
         transform: translateY(-5px);
         box-shadow: 0 .5rem 1rem rgba(0,0,0,.3)!important;
-        border-color: #0dcaf0 !important; /* Resalta en azul claro (info) al pasar el mouse */
+        border-color: #0dcaf0 !important;
+    }
+    .hover-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background-color: #1e2125;
+    }
+    .hover-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.25)!important;
     }
     .transition-all {
         transition: all .3s ease-in-out;
