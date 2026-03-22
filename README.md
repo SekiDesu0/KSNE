@@ -35,8 +35,14 @@ services:
 # TODO preguntas:
 - ver si tienen como turnos fijos para setear un horario
 - ver si trabajan mas de 2 personas maximo al dia
+- ver como funcionan los productos / precios de HC
 
 # TODO general:
+- tabla de productos vendidos durante el mes
+- formulario de cosas robadas
+- implementar horas extra?
+- implemetar calendario como el excel
+- arrglar colores en modo claro y oscuro
 - añadir si es part time o full time en la tabla de trabajadores para ver si necesitan comisiones
 - separar productos para tiendas
 - limpiar requirements.txt
