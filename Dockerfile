@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY app.py .
+COPY *.py .
 COPY templates/ ./templates/
 COPY static/ ./static/
 #COPY .env .

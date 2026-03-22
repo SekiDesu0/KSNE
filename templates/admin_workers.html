@@ -27,7 +27,7 @@
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label">RUT</label>
-                    <input type="text" class="form-control" name="rut" id="rutInput" placeholder="12.345.678-9" value="{{ form.get('rut', '') }}" required>
+                    <input type="text" class="form-control" name="rut" id="rutInput" placeholder="12.345.678-9" value="{{ form.get('rut', '') }}" maxlength="12" required>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Nombre Completo</label>
@@ -179,6 +179,12 @@
 
     document.getElementById('rutInput').addEventListener('input', function(e) {
         let value = this.value.replace(/[^0-9kK]/g, '').toUpperCase();
+        
+        // Bloquear el largo interno a 9 caracteres (8 cuerpo + 1 dv)
+        if (value.length > 9) {
+            value = value.slice(0, 9);
+        }
+
         if (value.length > 1) {
             let body = value.slice(0, -1);
             let dv = value.slice(-1);

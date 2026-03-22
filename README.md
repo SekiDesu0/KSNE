@@ -52,7 +52,6 @@ services:
 - formulario de perdidas en el dashboard(?) o hub
 - categorias de productos (complementos, etc)
 - precio de productos por zona
-- proteccion contra borrado de zonas o modulos si ya estan asignados a algo
 - hacer que contraseña autogenerada force a crear una nueva para el trabajador
 
 # TODO no prioritario:
