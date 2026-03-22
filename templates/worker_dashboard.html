@@ -10,7 +10,12 @@
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Rendición de Caja</h2>
+    <div>
+        <a href="{{ url_for('worker_dashboard') }}" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-arrow-left"></i> Volver al Historial
+        </a>
+        <h2>Nueva Rendición de Caja</h2>
+    </div>
     <div class="text-end text-muted">
         <div><strong>Módulo:</strong> <span class="badge bg-primary">{{ modulo_name }}</span></div>
         <div><small>Zona: {{ zona_name }}</small></div>

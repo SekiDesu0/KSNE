@@ -286,13 +286,61 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-@app.route('/dashboard', methods=['GET', 'POST'])
+@app.route('/dashboard')
 @login_required
 def worker_dashboard():
+    # Este es el nuevo historial principal del trabajador
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    user_id = session['user_id']
+    
+    c.execute('''
+        SELECT r.id, r.fecha, w.name, m.name,
+            r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
+            c_w.name, r.worker_id, r.companion_id, r.modulo_id
+        FROM rendiciones r
+        JOIN workers w ON r.worker_id = w.id
+        JOIN modulos m ON r.modulo_id = m.id
+        LEFT JOIN workers c_w ON r.companion_id = c_w.id
+        WHERE r.worker_id = ? OR r.companion_id = ?
+        ORDER BY r.fecha DESC, r.id DESC
+    ''', (user_id, user_id))
+    rendiciones_basicas = c.fetchall()
+    
+    rendiciones_completas = []
+    for r in rendiciones_basicas:
+        c.execute('''
+            SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
+                   (ri.cantidad * ri.precio_historico) as total_linea,
+                   (ri.cantidad * ri.comision_historica) as total_comision
+            FROM rendicion_items ri
+            JOIN productos p ON ri.producto_id = p.id
+            WHERE ri.rendicion_id = ?
+        ''', (r[0],))
+        items = c.fetchall()
+        
+        total_calculado = sum(item[4] for item in items)
+        comision_total = sum(item[5] for item in items)
+        
+        # Determinar el rol para mostrarlo en la tabla
+        rol = "Titular" if r[11] == user_id else "Acompañante"
+        
+        # Items en 14, total en 15, comision en 16, rol en 17
+        r_completa = r + (items, total_calculado, comision_total, rol)
+        rendiciones_completas.append(r_completa)
+        
+    conn.close()
+    return render_template('worker_history.html', rendiciones=rendiciones_completas)
+
+
+@app.route('/rendicion/nueva', methods=['GET', 'POST'])
+@login_required
+def new_rendicion():
+    # Este es el formulario de creación (tu antiguo dashboard)
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    # 1. Identificar al trabajador y su zona asignada
     c.execute('''SELECT w.modulo_id, m.name, z.id, z.name 
                  FROM workers w 
                  JOIN modulos m ON w.modulo_id = m.id 
@@ -306,7 +354,6 @@ def worker_dashboard():
 
     modulo_id, modulo_name, zona_id, zona_name = worker_info
 
-    # 2. Manejo del envío del formulario
     if request.method == 'POST':
         fecha = request.form.get('fecha')
         hora_entrada = request.form.get('hora_entrada')
@@ -337,7 +384,7 @@ def worker_dashboard():
 
         if debito is None or credito is None or mp is None or efectivo is None or not fecha or not hora_entrada or not hora_salida:
             flash("Error: Todos los campos obligatorios deben estar rellenos.", "danger")
-            return redirect(url_for('worker_dashboard'))
+            return redirect(url_for('new_rendicion'))
 
         total_digital = debito + credito + mp
         total_ventas_general = total_digital + efectivo
@@ -350,7 +397,6 @@ def worker_dashboard():
                 debito, credito, mp, efectivo, gastos, obs))
         rendicion_id = c.lastrowid
 
-        # Insertar Productos (Solo aquellos con cantidad > 0)
         for key, value in request.form.items():
             if key.startswith('qty_') and value and int(value) > 0:
                 prod_id = int(key.split('_')[1])
@@ -367,9 +413,8 @@ def worker_dashboard():
 
         conn.commit()
         flash(f"Rendición enviada exitosamente. Total General Declarado: ${total_ventas_general:,}".replace(',', '.'), "success")
-        return redirect(url_for('worker_dashboard'))
+        return redirect(url_for('worker_dashboard')) # Redirige al historial
 
-    # 3. Cargar Productos para la solicitud GET
     c.execute('''
                 SELECT id, name FROM workers 
                 WHERE id != ? AND modulo_id = ? AND is_admin = 0 
@@ -377,7 +422,6 @@ def worker_dashboard():
             ''', (session['user_id'], modulo_id))
     otros_trabajadores = c.fetchall()
     
-    # Cargar Productos (código existente)
     c.execute("SELECT id, name, price, commission FROM productos WHERE zona_id = ? ORDER BY name", (zona_id,))
     productos = c.fetchall()
     conn.close()
@@ -391,7 +435,7 @@ def worker_dashboard():
                            has_commission=has_commission,
                            otros_trabajadores=otros_trabajadores,
                            today=date.today().strftime('%Y-%m-%d'))
-                           
+                             
 @app.route('/admin/workers', methods=['GET', 'POST'])
 @admin_required
 def manage_workers():

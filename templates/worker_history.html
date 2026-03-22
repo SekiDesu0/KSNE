@@ -1,0 +1,74 @@
+{% extends "macros/base.html" %}
+{% from 'macros/modals.html' import rendicion_detail_modal %}
+
+{% block title %}Mis Rendiciones{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Mis Rendiciones</h2>
+    <a href="{{ url_for('new_rendicion') }}" class="btn btn-success shadow-sm">
+        <i class="bi bi-plus-circle me-2"></i>Nueva Rendición
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Mi Rol</th>
+                    <th>Módulo</th>
+                    <th>Total Declarado</th>
+                    <th>Gastos</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rendiciones %}
+                <tr>
+                    <td class="align-middle">{{ r[1] }}</td>
+                    <td class="align-middle">
+                        {% if r[17] == 'Titular' %}
+                            <span class="badge bg-primary">Titular</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Acompañante</span>
+                        {% endif %}
+                    </td>
+                    <td class="align-middle"><span class="badge bg-info text-dark">{{ r[3] }}</span></td>
+                    
+                    <td class="align-middle fw-bold text-success">
+                        ${{ "{:,.0f}".format((r[4] or 0) + (r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}
+                    </td>
+                    <td class="align-middle text-danger">
+                        ${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#viewRendicion{{ r[0] }}" title="Ver Detalle">
+                            <i class="bi bi-eye"></i> Ver Detalle
+                        </button>
+
+                        {{ rendicion_detail_modal(r, r[14], r[15], r[16]) }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        Aún no tienes rendiciones registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
