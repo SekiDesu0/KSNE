@@ -84,7 +84,39 @@ def populateDefaults():
                 ]
                 for w in workers_data:
                     c.execute("INSERT OR IGNORE INTO workers (rut, name, phone, password_hash, is_admin, modulo_id, tipo) VALUES (?, ?, ?, ?, ?, ?, ?)", w)
-                conn.commit()        
+                conn.commit()      
+        # Generar Rendiciones Placeholder
+    c.execute("SELECT COUNT(*) FROM rendiciones")
+    if c.fetchone()[0] == 0:
+        import datetime
+        # 1. Obtener datos necesarios para las llaves foráneas
+        c.execute("SELECT id, modulo_id FROM workers WHERE is_admin = 0")
+        workers_list = c.fetchall()
+        
+        # 2. Insertar una rendición por trabajador
+        for w_id, m_id in workers_list:
+            fecha_ejemplo = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+            
+            c.execute('''INSERT INTO rendiciones 
+                (worker_id, worker_comision, modulo_id, fecha, hora_entrada, hora_salida, 
+                 venta_debito, venta_credito, venta_mp, venta_efectivo, gastos, observaciones) 
+                VALUES (?, 1, ?, ?, '09:00', '21:00', ?, ?, ?, ?, 0, 'Rendición de prueba')''',
+                (w_id, m_id, fecha_ejemplo, 10000, 20000, 5000, 15000))
+            
+            rendicion_id = c.lastrowid
+
+            # 3. Añadir productos a esa rendición (Rendicion_items)
+            # Obtenemos productos de cualquier zona para el ejemplo
+            c.execute("SELECT id, price, commission FROM productos LIMIT 3")
+            prods = c.fetchall()
+            
+            for p_id, p_price, p_comm in prods:
+                c.execute('''INSERT INTO rendicion_items 
+                    (rendicion_id, producto_id, cantidad, precio_historico, comision_historica)
+                    VALUES (?, ?, ?, ?, ?)''',
+                    (rendicion_id, p_id, 2, p_price, p_comm))
+        
+        conn.commit()  
     conn.close()
 
 def init_db():
