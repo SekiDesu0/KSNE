@@ -86,5 +86,42 @@
         
         document.getElementById(`display_nuevo_total_${id}`).innerText = '$' + total.toLocaleString('es-CL');
     }
+
+    function updateComisionToggle(selectElement, toggleId) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const tipoJornada = selectedOption.getAttribute('data-tipo');
+        const toggleSwitch = document.getElementById(toggleId);
+        
+        if (toggleSwitch && tipoJornada) {
+            // Si es Full Time, lo enciende (true). Si es Part Time, lo apaga (false).
+            toggleSwitch.checked = (tipoJornada === 'Full Time');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Escuchar el evento de cierre de cualquier modal que empiece con 'editRendicion'
+    const editModals = document.querySelectorAll('[id^="editRendicion"]');
+    
+    editModals.forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function () {
+            const form = this.querySelector('form');
+            if (form) {
+                // 1. Resetear campos estándar (inputs, selects, textareas)
+                form.reset();
+                
+                // 2. Forzar la actualización del total visual (el que calculas por JS)
+                const rendicionId = this.id.replace('editRendicion', '');
+                calcTotalEdit(rendicionId);
+
+                // 3. Manejo especial para el div del acompañante (si aplica)
+                const companionSelect = form.querySelector('select[name="companion_id"]');
+                const compDiv = document.getElementById(`comp_com_div_${rendicionId}`);
+                if (companionSelect && compDiv) {
+                    compDiv.style.display = companionSelect.value ? 'block' : 'none';
+                }
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

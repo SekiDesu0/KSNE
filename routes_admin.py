@@ -330,7 +330,7 @@ def register_admin_routes(app):
             r_completa = r + (items, total_calculado, comision_total)
             rendiciones_completas.append(r_completa)
 
-        c.execute("SELECT id, name FROM workers WHERE is_admin = 0 ORDER BY name")
+        c.execute("SELECT id, name, tipo FROM workers WHERE is_admin = 0 ORDER BY name")
         workers = c.fetchall()
         
         c.execute("SELECT id, name FROM modulos ORDER BY name")

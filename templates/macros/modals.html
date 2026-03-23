@@ -321,9 +321,9 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Trabajador</label>
-                            <select class="form-select" name="worker_id" required>
+                            <select class="form-select" name="worker_id" onchange="updateComisionToggle(this, 'wc_{{ rendicion[0] }}')" required>
                                 {% for w in workers %}
-                                    <option value="{{ w[0] }}" {% if w[0] == rendicion[11] %}selected{% endif %}>{{ w[1] }}</option>
+                                    <option value="{{ w[0] }}" data-tipo="{{ w[2] }}" {% if w[0] == rendicion[11] %}selected{% endif %}>{{ w[1] }} ({{ w[2] }})</option>
                                 {% endfor %}
                             </select>
                             <div class="form-check form-switch mt-2">
@@ -333,10 +333,10 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Acompañante</label>
-                            <select class="form-select" name="companion_id" onchange="document.getElementById('comp_com_div_{{ rendicion[0] }}').style.display = this.value ? 'block' : 'none';">
-                                <option value="">Sin acompañante</option>
+                            <select class="form-select" name="companion_id" onchange="document.getElementById('comp_com_div_{{ rendicion[0] }}').style.display = this.value ? 'block' : 'none'; updateComisionToggle(this, 'cc_{{ rendicion[0] }}');">
+                                <option value="" data-tipo="">Sin acompañante</option>
                                 {% for w in workers %}
-                                    <option value="{{ w[0] }}" {% if w[0] == rendicion[12] %}selected{% endif %}>{{ w[1] }}</option>
+                                    <option value="{{ w[0] }}" data-tipo="{{ w[2] }}" {% if w[0] == rendicion[12] %}selected{% endif %}>{{ w[1] }} ({{ w[2] }})</option>
                                 {% endfor %}
                             </select>
                             <div class="form-check form-switch mt-2" id="comp_com_div_{{ rendicion[0] }}" {% if not rendicion[12] %}style="display:none;"{% endif %}>
