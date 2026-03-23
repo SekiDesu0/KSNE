@@ -362,50 +362,64 @@ def register_admin_routes(app):
     @app.route('/admin/rendiciones/edit/<int:id>', methods=['POST'])
     @admin_required
     def edit_rendicion(id):
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        # Obtener datos básicos
         fecha = request.form.get('fecha')
         worker_id = request.form.get('worker_id')
-        modulo_id = request.form.get('modulo_id')
-        companion_id = request.form.get('companion_id')
-        
-        if companion_id == "":
-            companion_id = None
-
-        debito = request.form.get('venta_debito', '0').replace('.', '')
-        credito = request.form.get('venta_credito', '0').replace('.', '')
-        mp = request.form.get('venta_mp', '0').replace('.', '')
-        efectivo = request.form.get('venta_efectivo', '0').replace('.', '')
-        gastos = request.form.get('gastos', '0').replace('.', '')
-        observaciones = request.form.get('observaciones', '').strip()
+        modulo_id = request.form.get('modulo_id')  # Asegúrate de tener el input hidden en el HTML
+        companion_id = request.form.get('companion_id') or None
         
         worker_comision = 1 if request.form.get('worker_comision') else 0
         companion_comision = 1 if request.form.get('companion_comision') else 0
 
+        # Limpiador de dinero para manejar los puntos de miles
+        def clean_money(val):
+            if not val: return 0
+            return int(str(val).replace('.', '').replace('$', ''))
+
         try:
-            debito = int(debito) if debito else 0
-            credito = int(credito) if credito else 0
-            mp = int(mp) if mp else 0
-            efectivo = int(efectivo) if efectivo else 0
-            gastos = int(gastos) if gastos else 0
-        except ValueError:
-            flash("Los valores ingresados deben ser números válidos.", "danger")
-            return redirect(url_for('admin_rendiciones'))
+            debito = clean_money(request.form.get('venta_debito'))
+            credito = clean_money(request.form.get('venta_credito'))
+            mp = clean_money(request.form.get('venta_mp'))
+            efectivo = clean_money(request.form.get('venta_efectivo'))
+            gastos = clean_money(request.form.get('gastos'))
+            observaciones = request.form.get('observaciones', '').strip()
 
-        conn = get_db_connection()
-        c = conn.cursor()
-        
-        c.execute('''
-            UPDATE rendiciones 
-            SET fecha=?, worker_id=?, modulo_id=?, companion_id=?,
-                venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, gastos=?, observaciones=?,
-                worker_comision=?, companion_comision=?
-            WHERE id=?
-        ''', (fecha, worker_id, modulo_id, companion_id, debito, credito, mp, efectivo, gastos, observaciones, worker_comision, companion_comision, id))    
-        conn.commit()
-        conn.close()
+            # 1. Actualizar cantidades de productos
+            # Recorremos el formulario buscando las cantidades editadas
+            for key, value in request.form.items():
+                if key.startswith('qty_'):
+                    # En el modal el name es 'qty_{{ item[6] }}' donde item[6] es el ID de rendicion_items
+                    ri_id = key.split('_')[1]
+                    nueva_qty = int(value or 0)
+                    
+                    # IMPORTANTE: Usamos 'precio_historico' que es el nombre real en tu DB
+                    c.execute('''UPDATE rendicion_items 
+                                SET cantidad = ? 
+                                WHERE id = ?''', (nueva_qty, ri_id))
 
-        flash("Rendición actualizada correctamente.", "success")
+            # 2. Actualizar la rendición principal
+            c.execute('''
+                UPDATE rendiciones 
+                SET fecha=?, worker_id=?, modulo_id=?, companion_id=?,
+                    venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, 
+                    gastos=?, observaciones=?, worker_comision=?, companion_comision=?
+                WHERE id=?
+            ''', (fecha, worker_id, modulo_id, companion_id, 
+                debito, credito, mp, efectivo, 
+                gastos, observaciones, worker_comision, companion_comision, id))    
+            
+            conn.commit()
+            flash("Rendición y productos actualizados correctamente.", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Error al actualizar: {str(e)}", "danger")
+        finally:
+            conn.close()
+
         return redirect(url_for('admin_rendiciones'))
-
 
     @app.route('/admin/reportes')
     @admin_required 

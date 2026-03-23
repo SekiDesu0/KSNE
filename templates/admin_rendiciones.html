@@ -49,7 +49,7 @@
                         </div>
 
                         {{ rendicion_detail_modal(r, r[16], r[17], r[18]) }}
-                        {{ edit_rendicion_modal(r, workers, modulos) }}
+                        {{ edit_rendicion_modal(r, r[16], workers, modulos) }}
                         
                         {{ confirm_modal(
                             id='deleteRendicion' ~ r[0],
@@ -74,54 +74,94 @@
 
 {% block scripts %}
 <script>
-    function calcTotalEdit(id) {
-        const getVal = (inputId) => parseInt(document.getElementById(inputId).value.replace(/\D/g, '')) || 0;
+    // Función para manejar las etiquetas de jornada (Full/Part Time)
+    function updateBadge(selectElement, badgeId) {
+        const option = selectElement.options[selectElement.selectedIndex];
+        const tipo = option.getAttribute('data-tipo');
+        const badgeDiv = document.getElementById(badgeId);
         
-        const debito = getVal(`edit_debito_${id}`);
-        const credito = getVal(`edit_credito_${id}`);
-        const mp = getVal(`edit_mp_${id}`);
-        const efectivo = getVal(`edit_efectivo_${id}`);
+        if (!badgeDiv) return;
         
-        const total = debito + credito + mp + efectivo;
-        
-        document.getElementById(`display_nuevo_total_${id}`).innerText = '$' + total.toLocaleString('es-CL');
+        if (!tipo) {
+            badgeDiv.innerHTML = '';
+            return;
+        }
+
+        const color = (tipo === 'Full Time') ? 'bg-success' : 'bg-secondary';
+        badgeDiv.innerHTML = `<span class="badge ${color}">${tipo}</span>`;
+    }
+
+    function toggleCompDiv(id, select) {
+        const compDiv = document.getElementById(`comp_com_div_${id}`);
+        compDiv.style.display = select.value ? 'flex' : 'none';
+        updateBadge(select, `badge_comp_${id}`);
+        updateComisionToggle(select, `cc_${id}`);
     }
 
     function updateComisionToggle(selectElement, toggleId) {
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        const tipoJornada = selectedOption.getAttribute('data-tipo');
+        const option = selectElement.options[selectElement.selectedIndex];
+        const tipoJornada = option.getAttribute('data-tipo');
         const toggleSwitch = document.getElementById(toggleId);
         
         if (toggleSwitch && tipoJornada) {
-            // Si es Full Time, lo enciende (true). Si es Part Time, lo apaga (false).
             toggleSwitch.checked = (tipoJornada === 'Full Time');
         }
+        
+        // Actualizar el badge también
+        const baseId = toggleId.split('_')[1];
+        const targetBadge = toggleId.startsWith('wc') ? `badge_worker_${baseId}` : `badge_comp_${baseId}`;
+        updateBadge(selectElement, targetBadge);
+    }
+
+    // Recalcular total de la línea de producto y el total del sistema
+    function recalcProductLine(input) {
+        const qty = parseInt(input.value) || 0;
+        const price = parseInt(input.getAttribute('data-price')) || 0;
+        const rid = input.getAttribute('data-rid');
+        const row = input.closest('tr');
+        
+        // Actualizar línea individual
+        const lineTotal = qty * price;
+        row.querySelector('.item-total-line').innerText = '$' + lineTotal.toLocaleString('es-CL');
+
+        // Recalcular total general del sistema en el modal
+        const modal = document.getElementById(`editRendicion${rid}`);
+        let newSysTotal = 0;
+        modal.querySelectorAll('.prod-qty-input').forEach(inp => {
+            newSysTotal += (parseInt(inp.value) || 0) * (parseInt(inp.getAttribute('data-price')) || 0);
+        });
+        document.getElementById(`sys_total_${rid}`).innerText = '$' + newSysTotal.toLocaleString('es-CL');
+    }
+
+    function calcTotalEdit(id) {
+        const getVal = (inputId) => parseInt(document.getElementById(inputId).value.replace(/\D/g, '')) || 0;
+        const total = getVal(`edit_debito_${id}`) + getVal(`edit_credito_${id}`) + getVal(`edit_mp_${id}`) + getVal(`edit_efectivo_${id}`);
+        document.getElementById(`display_nuevo_total_${id}`).innerText = '$' + total.toLocaleString('es-CL');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-    // Escuchar el evento de cierre de cualquier modal que empiece con 'editRendicion'
-    const editModals = document.querySelectorAll('[id^="editRendicion"]');
-    
-    editModals.forEach(modal => {
-        modal.addEventListener('hidden.bs.modal', function () {
-            const form = this.querySelector('form');
-            if (form) {
-                // 1. Resetear campos estándar (inputs, selects, textareas)
-                form.reset();
-                
-                // 2. Forzar la actualización del total visual (el que calculas por JS)
-                const rendicionId = this.id.replace('editRendicion', '');
-                calcTotalEdit(rendicionId);
+        const editModals = document.querySelectorAll('[id^="editRendicion"]');
+        
+        editModals.forEach(modal => {
+            // Inicializar badges al abrir
+            modal.addEventListener('show.bs.modal', function() {
+                const rid = this.id.replace('editRendicion', '');
+                updateBadge(this.querySelector('select[name="worker_id"]'), `badge_worker_${rid}`);
+                const compSelect = this.querySelector('select[name="companion_id"]');
+                if (compSelect.value) updateBadge(compSelect, `badge_comp_${rid}`);
+            });
 
-                // 3. Manejo especial para el div del acompañante (si aplica)
-                const companionSelect = form.querySelector('select[name="companion_id"]');
-                const compDiv = document.getElementById(`comp_com_div_${rendicionId}`);
-                if (companionSelect && compDiv) {
-                    compDiv.style.display = companionSelect.value ? 'block' : 'none';
+            modal.addEventListener('hidden.bs.modal', function () {
+                const form = this.querySelector('form');
+                if (form) {
+                    form.reset();
+                    const rid = this.id.replace('editRendicion', '');
+                    calcTotalEdit(rid);
+                    // Resetear los subtotales visuales de productos
+                    this.querySelectorAll('.prod-qty-input').forEach(inp => recalcProductLine(inp));
                 }
-            }
+            });
         });
     });
-});
 </script>
 {% endblock %}
