@@ -1,0 +1,85 @@
+{% extends "macros/base.html" %}
+
+{% block title %}Reporte: Comisiones - {{ modulo_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .numeric-cell {
+        text-align: right;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background-color: #f8f9fa !important;
+        border-right: 2px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('admin_reportes_index') }}" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-arrow-left"></i> Volver al Menú
+        </a>
+        <h2>Reporte de Comisiones</h2>
+    </div>
+    <div class="text-end">
+        <div><strong class="text-primary fs-5">{{ modulo_name }}</strong></div>
+        <div class="text-muted"><small>Período: {{ mes_nombre }}</small></div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        {% if workers_data %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover table-sm mb-0 text-nowrap">
+                <thead class="table-dark text-center align-middle">
+                    <tr>
+                        <th class="sticky-col py-2" style="width: 80px;">Día</th>
+                        {% for w_id, data in workers_data.items() %}
+                            <th class="py-2">
+                                {{ data.name }}<br>
+                                <span class="badge {% if data.tipo == 'Full Time' %}bg-success{% else %}bg-secondary{% endif %} fw-normal mt-1">{{ data.tipo }}</span>
+                                <br>
+                                <small class="{% if data.enabled %}text-info{% else %}text-danger{% endif %} fw-normal" style="font-size: 0.75em;">
+                                    {% if data.enabled %}(Comisión Activa){% else %}(Sin Comisión){% endif %}
+                                </small>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dia in dias_en_periodo %}
+                    <tr>
+                        <td class="align-middle sticky-col numeric-cell fw-bold text-center">{{ dia }}</td>
+                        {% for w_id, data in workers_data.items() %}
+                            {% set comision = data.dias.get(dia, 0) %}
+                            <td class="align-middle numeric-cell {% if comision > 0 %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                {{ ("$" ~ "{:,.0f}".format(comision).replace(',', '.')) if comision > 0 else "-" }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-group-divider fw-bold bg-dark text-white sticky-bottom">
+                    <tr>
+                        <td class="align-middle sticky-col py-2 text-center">TOTAL</td>
+                        {% for w_id, data in workers_data.items() %}
+                            <td class="align-middle numeric-cell py-2 text-success fs-6">
+                                ${{ "{:,.0f}".format(data.total).replace(',', '.') }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center mb-0">No hay trabajadores con rendiciones registradas para este módulo en el período actual.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

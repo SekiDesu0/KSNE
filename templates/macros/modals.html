@@ -482,7 +482,7 @@
                                     <h5 class="card-title mb-0">Comisiones</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Cálculo de comisiones generadas por los trabajadores en este módulo.</p>
-                                <button class="btn btn-outline-success w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                                <a href="{{ url_for('report_modulo_comisiones', modulo_id=modulo_id) }}" class="btn btn-outline-success w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>

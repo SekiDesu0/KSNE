@@ -517,3 +517,82 @@ def register_admin_routes(app):
                                data_por_dia=data_por_dia,
                                totales_mes=totales_mes,
                                dias_activos=dias_activos)
+        
+    @app.route('/admin/reportes/modulo/<int:modulo_id>/comisiones')
+    @admin_required
+    def report_modulo_comisiones(modulo_id):
+        mes_actual = date.today().month
+        anio_actual = date.today().year
+        
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+        modulo_info = c.fetchone()
+        if not modulo_info:
+            conn.close()
+            flash("Módulo no encontrado.", "danger")
+            return redirect(url_for('admin_reportes_index'))
+        modulo_name = modulo_info[0]
+
+        # Fetch rendiciones with commission calculations for this module and month
+        c.execute('''
+            SELECT r.id, strftime('%d', r.fecha) as dia, 
+                   w.id, w.name, w.tipo, r.worker_comision,
+                   cw.id, cw.name, cw.tipo, r.companion_comision,
+                   COALESCE((SELECT SUM(cantidad * comision_historica) FROM rendicion_items WHERE rendicion_id = r.id), 0) as total_comision
+            FROM rendiciones r
+            JOIN workers w ON r.worker_id = w.id
+            LEFT JOIN workers cw ON r.companion_id = cw.id
+            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
+            ORDER BY r.fecha ASC
+        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
+        
+        rendiciones = c.fetchall()
+        conn.close()
+
+        workers_data = {}
+        
+        for row in rendiciones:
+            r_id, dia, w_id, w_name, w_tipo, w_com, c_id, c_name, c_tipo, c_com, total_com = row
+            
+            w_share = 0
+            c_share = 0
+            
+            # Split logic
+            if w_com and c_com:
+                w_share = total_com / 2
+                c_share = total_com / 2
+            elif w_com:
+                w_share = total_com
+            elif c_com:
+                c_share = total_com
+                
+            # Process Titular Worker
+            if w_id not in workers_data:
+                workers_data[w_id] = {'name': w_name, 'tipo': w_tipo, 'dias': {}, 'total': 0, 'enabled': bool(w_com)}
+            else:
+                if w_com: workers_data[w_id]['enabled'] = True
+            
+            workers_data[w_id]['dias'][dia] = workers_data[w_id]['dias'].get(dia, 0) + w_share
+            workers_data[w_id]['total'] += w_share
+            
+            # Process Companion (if any)
+            if c_id:
+                if c_id not in workers_data:
+                    workers_data[c_id] = {'name': c_name, 'tipo': c_tipo, 'dias': {}, 'total': 0, 'enabled': bool(c_com)}
+                else:
+                    if c_com: workers_data[c_id]['enabled'] = True
+                    
+                workers_data[c_id]['dias'][dia] = workers_data[c_id]['dias'].get(dia, 0) + c_share
+                workers_data[c_id]['total'] += c_share
+
+        # Sort alphabetically so the table doesn't shuffle randomly
+        workers_data = dict(sorted(workers_data.items(), key=lambda item: item[1]['name']))
+        dias_en_periodo = [f'{d:02}' for d in range(1, 32)]
+
+        return render_template('admin_report_comisiones.html',
+                               modulo_name=modulo_name,
+                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
+                               workers_data=workers_data,
+                               dias_en_periodo=dias_en_periodo)
