@@ -131,31 +131,47 @@
         <div class="card-body">
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
-                    <label class="form-label">Venta Débito</label>
-                    <div class="input-group">
+                    <label class="form-label">Débito</label>
+                    <div class="input-group mb-2">
                         <span class="input-group-text">$</span>
                         <input type="text" class="form-control money-input sale-input" name="venta_debito" id="venta_debito" required>
                     </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-secondary text-white border-0">Nº Boletas</span>
+                        <input type="number" class="form-control" name="boletas_debito" min="0" placeholder="0">
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Venta Crédito</label>
-                    <div class="input-group">
+                    <label class="form-label">Crédito</label>
+                    <div class="input-group mb-2">
                         <span class="input-group-text">$</span>
                         <input type="text" class="form-control money-input sale-input" name="venta_credito" id="venta_credito" required>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Venta Mercado Pago</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_mp" id="venta_mp" required>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-secondary text-white border-0">Nº Boletas</span>
+                        <input type="number" class="form-control" name="boletas_credito" min="0" placeholder="0">
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Venta Efectivo</label>
-                    <div class="input-group">
+                    <label class="form-label">Mercado Pago</label>
+                    <div class="input-group mb-2">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_mp" id="venta_mp" required>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-secondary text-white border-0">Nº Boletas</span>
+                        <input type="number" class="form-control" name="boletas_mp" min="0" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Efectivo</label>
+                    <div class="input-group mb-2">
                         <span class="input-group-text">$</span>
                         <input type="text" class="form-control money-input sale-input" placeholder="0" name="venta_efectivo" id="venta_efectivo" required>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-secondary text-white border-0">Nº Boletas</span>
+                        <input type="number" class="form-control" name="boletas_efectivo" min="0" placeholder="0">
                     </div>
                 </div>
             </div>

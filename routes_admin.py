@@ -1,9 +1,10 @@
 import sqlite3
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import app, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash
-from datetime import date
+from datetime import date, datetime
 from database import get_db_connection
 from utils import admin_required, validate_rut, format_rut, validate_phone, format_phone, generate_random_password
+import calendar
 
 def register_admin_routes(app):
     @app.route('/admin/workers', methods=['GET', 'POST'])
@@ -299,16 +300,17 @@ def register_admin_routes(app):
         c = conn.cursor()
         
         c.execute('''
-                SELECT r.id, r.fecha, w.name, m.name,
-                    r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-                    c_w.name, r.worker_id, r.companion_id, r.modulo_id,
-                    r.worker_comision, r.companion_comision
-                FROM rendiciones r
-                JOIN workers w ON r.worker_id = w.id
-                JOIN modulos m ON r.modulo_id = m.id
-                LEFT JOIN workers c_w ON r.companion_id = c_w.id
-                ORDER BY r.fecha DESC, r.id DESC
-            ''')
+            SELECT r.id, r.fecha, w.name, m.name,
+                r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
+                c_w.name, r.worker_id, r.companion_id, r.modulo_id,
+                r.worker_comision, r.companion_comision,
+                r.boletas_debito, r.boletas_credito, r.boletas_mp, r.boletas_efectivo
+            FROM rendiciones r
+            JOIN workers w ON r.worker_id = w.id
+            JOIN modulos m ON r.modulo_id = m.id
+            LEFT JOIN workers c_w ON r.companion_id = c_w.id
+            ORDER BY r.fecha DESC, r.id DESC
+        ''')
         rendiciones_basicas = c.fetchall()
 
         rendiciones_completas = []
@@ -388,6 +390,12 @@ def register_admin_routes(app):
             credito = clean_money(request.form.get('venta_credito'))
             mp = clean_money(request.form.get('venta_mp'))
             efectivo = clean_money(request.form.get('venta_efectivo'))
+            
+            bol_debito = int(request.form.get('boletas_debito') or 0)
+            bol_credito = int(request.form.get('boletas_credito') or 0)
+            bol_mp = int(request.form.get('boletas_mp') or 0)
+            bol_efectivo = int(request.form.get('boletas_efectivo') or 0)
+            
             gastos = clean_money(request.form.get('gastos'))
             observaciones = request.form.get('observaciones', '').strip()
 
@@ -409,11 +417,13 @@ def register_admin_routes(app):
                 UPDATE rendiciones 
                 SET fecha=?, worker_id=?, modulo_id=?, companion_id=?,
                     venta_debito=?, venta_credito=?, venta_mp=?, venta_efectivo=?, 
+                    boletas_debito=?, boletas_credito=?, boletas_mp=?, boletas_efectivo=?,
                     gastos=?, observaciones=?, worker_comision=?, companion_comision=?
                 WHERE id=?
             ''', (fecha, worker_id, modulo_id, companion_id, 
                 debito, credito, mp, efectivo, 
-                gastos, observaciones, worker_comision, companion_comision, id))    
+                bol_debito, bol_credito, bol_mp, bol_efectivo,
+                gastos, observaciones, worker_comision, companion_comision, id))   
             
             conn.commit()
             flash("Rendición y productos actualizados correctamente.", "success")
@@ -594,6 +604,106 @@ def register_admin_routes(app):
         dias_en_periodo = [f'{d:02}' for d in range(1, 32)]
 
         return render_template('admin_report_comisiones.html',
+                               modulo_name=modulo_name,
+                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
+                               workers_data=workers_data,
+                               dias_en_periodo=dias_en_periodo)
+        
+    @app.route('/admin/reportes/modulo/<int:modulo_id>/horarios')
+    @admin_required
+    def report_modulo_horarios(modulo_id):
+        import calendar
+        from datetime import date, datetime
+        
+        mes_actual = date.today().month
+        anio_actual = date.today().year
+        
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+        modulo_info = c.fetchone()
+        if not modulo_info:
+            conn.close()
+            flash("Módulo no encontrado.", "danger")
+            return redirect(url_for('admin_reportes_index'))
+        modulo_name = modulo_info[0]
+
+        # 1. Pre-cargar a los trabajadores oficiales del módulo (aunque no hayan trabajado aún)
+        c.execute("SELECT id, name FROM workers WHERE modulo_id = ? AND is_admin = 0", (modulo_id,))
+        assigned_workers = c.fetchall()
+        
+        workers_data = {}
+        for w_id, w_name in assigned_workers:
+            workers_data[w_id] = {'name': w_name, 'dias': {}, 'total_horas': 0.0}
+
+        # 2. Extraer rendiciones del mes/módulo
+        c.execute('''
+            SELECT 
+                r.fecha, 
+                w.id, w.name, r.hora_entrada, r.hora_salida,
+                cw.id, cw.name, r.companion_hora_entrada, r.companion_hora_salida
+            FROM rendiciones r
+            JOIN workers w ON r.worker_id = w.id
+            LEFT JOIN workers cw ON r.companion_id = cw.id
+            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
+            ORDER BY r.fecha ASC
+        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
+        
+        rendiciones = c.fetchall()
+        conn.close()
+
+        def calc_horas(in_str, out_str):
+            if not in_str or not out_str:
+                return 0.0, "0:00"
+            try:
+                t1 = datetime.strptime(in_str, '%H:%M')
+                t2 = datetime.strptime(out_str, '%H:%M')
+                delta = t2 - t1
+                return delta.seconds / 3600, f"{delta.seconds // 3600}:{(delta.seconds % 3600) // 60:02d}"
+            except ValueError:
+                return 0.0, "0:00"
+
+        for r in rendiciones:
+            fecha, w_id, w_name, w_in, w_out, c_id, c_name, c_in, c_out = r
+            dia = fecha[-2:] 
+            
+            # Titular (Si no es del módulo, lo metemos con etiqueta de Apoyo)
+            if w_id not in workers_data:
+                workers_data[w_id] = {'name': f"{w_name} (Apoyo)", 'dias': {}, 'total_horas': 0.0}
+            
+            h_dec, h_str = calc_horas(w_in, w_out)
+            workers_data[w_id]['dias'][dia] = {'in': w_in, 'out': w_out, 'hrs': h_str}
+            workers_data[w_id]['total_horas'] += h_dec
+            
+            # Acompañante
+            if c_id and c_in and c_out:
+                if c_id not in workers_data:
+                    workers_data[c_id] = {'name': f"{c_name} (Apoyo)", 'dias': {}, 'total_horas': 0.0}
+                
+                h_dec, h_str = calc_horas(c_in, c_out)
+                workers_data[c_id]['dias'][dia] = {'in': c_in, 'out': c_out, 'hrs': h_str}
+                workers_data[c_id]['total_horas'] += h_dec
+
+        for w_id in workers_data:
+            th = workers_data[w_id]['total_horas']
+            workers_data[w_id]['total_hrs_str'] = f"{int(th)}:{int(round((th - int(th)) * 60)):02d}"
+
+        # Ordenar alfabéticamente (Los de apoyo quedarán entremezclados por orden alfabético)
+        workers_data = dict(sorted(workers_data.items(), key=lambda x: x[1]['name']))
+        
+        _, num_dias = calendar.monthrange(anio_actual, mes_actual)
+        nombres_dias = ['D', 'L', 'M', 'M', 'J', 'V', 'S'] # Ajustado para que el 0 de Python(Lunes) sea coherente si usas isoweekday
+        
+        dias_en_periodo = []
+        for d in range(1, num_dias + 1):
+            dia_semana = date(anio_actual, mes_actual, d).weekday()
+            dias_en_periodo.append({
+                'num': f'{d:02}',
+                'name': ['L', 'M', 'M', 'J', 'V', 'S', 'D'][dia_semana] # weekday(): Lunes es 0, Domingo es 6
+            })
+
+        return render_template('admin_report_horarios.html',
                                modulo_name=modulo_name,
                                mes_nombre=f'{mes_actual:02}/{anio_actual}',
                                workers_data=workers_data,

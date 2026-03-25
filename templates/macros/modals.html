@@ -239,19 +239,19 @@
                                 </dl>
                                 <hr>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Débito:</span>
+                                    <span class="text-muted">Débito <small>(x{{ rendicion[16] }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[4] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Crédito:</span>
+                                    <span class="text-muted">Crédito <small>(x{{ rendicion[17] }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[5] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Mercado Pago:</span>
+                                    <span class="text-muted">Mercado Pago <small>(x{{ rendicion[18] }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[6] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Efectivo:</span>
+                                    <span class="text-muted">Efectivo <small>(x{{ rendicion[19] }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[7] or 0).replace(',', '.') }}</span>
                                 </div>
                                 
@@ -398,22 +398,38 @@
                                         </div>
                                     </div>
 
-                                    <div class="row g-1 mt-1 border-top pt-2">
+                                    <div class="row g-2 mt-1 border-top pt-2">
                                         <div class="col-6">
                                             <label class="small text-muted mb-0">Débito</label>
-                                            <input type="text" class="form-control form-control-sm text-end money-input" id="edit_debito_{{ rendicion[0] }}" name="venta_debito" value="{{ '{:,.0f}'.format(rendicion[4] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_debito_{{ rendicion[0] }}" name="venta_debito" value="{{ '{:,.0f}'.format(rendicion[4] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-dark border-secondary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <input type="number" class="form-control text-center bg-dark text-white border-secondary" name="boletas_debito" value="{{ rendicion[16] or 0 }}">
+                                            </div>
                                         </div>
                                         <div class="col-6">
                                             <label class="small text-muted mb-0">Crédito</label>
-                                            <input type="text" class="form-control form-control-sm text-end money-input" id="edit_credito_{{ rendicion[0] }}" name="venta_credito" value="{{ '{:,.0f}'.format(rendicion[5] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_credito_{{ rendicion[0] }}" name="venta_credito" value="{{ '{:,.0f}'.format(rendicion[5] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-dark border-secondary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <input type="number" class="form-control text-center bg-dark text-white border-secondary" name="boletas_credito" value="{{ rendicion[17] or 0 }}">
+                                            </div>
                                         </div>
                                         <div class="col-6">
                                             <label class="small text-muted mb-0">Mercado Pago</label>
-                                            <input type="text" class="form-control form-control-sm text-end money-input" id="edit_mp_{{ rendicion[0] }}" name="venta_mp" value="{{ '{:,.0f}'.format(rendicion[6] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_mp_{{ rendicion[0] }}" name="venta_mp" value="{{ '{:,.0f}'.format(rendicion[6] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-dark border-secondary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <input type="number" class="form-control text-center bg-dark text-white border-secondary" name="boletas_mp" value="{{ rendicion[18] or 0 }}">
+                                            </div>
                                         </div>
                                         <div class="col-6">
                                             <label class="small text-muted mb-0">Efectivo</label>
-                                            <input type="text" class="form-control form-control-sm text-end money-input" id="edit_efectivo_{{ rendicion[0] }}" name="venta_efectivo" value="{{ '{:,.0f}'.format(rendicion[7] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_efectivo_{{ rendicion[0] }}" name="venta_efectivo" value="{{ '{:,.0f}'.format(rendicion[7] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-dark border-secondary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <input type="number" class="form-control text-center bg-dark text-white border-secondary" name="boletas_efectivo" value="{{ rendicion[19] or 0 }}">
+                                            </div>
                                         </div>
                                     </div>
 
@@ -502,7 +518,7 @@
                                     <h5 class="card-title mb-0">Control de Horarios</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Registro de horas de entrada y salida de los trabajadores y acompañantes.</p>
-                                <button class="btn btn-outline-warning w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                                <a href="{{ url_for('report_modulo_horarios', modulo_id=modulo_id) }}" class="btn btn-warning w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>

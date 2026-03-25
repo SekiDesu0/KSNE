@@ -16,7 +16,8 @@ def register_worker_routes(app):
             SELECT r.id, r.fecha, w.name, m.name,
                 r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
                 c_w.name, r.worker_id, r.companion_id, r.modulo_id,
-                r.worker_comision, r.companion_comision
+                r.worker_comision, r.companion_comision,
+                r.boletas_debito, r.boletas_credito, r.boletas_mp, r.boletas_efectivo
             FROM rendiciones r
             JOIN workers w ON r.worker_id = w.id
             JOIN modulos m ON r.modulo_id = m.id
@@ -87,6 +88,10 @@ def register_worker_routes(app):
             credito = clean_and_validate(request.form.get('venta_credito'))
             mp = clean_and_validate(request.form.get('venta_mp'))
             efectivo = clean_and_validate(request.form.get('venta_efectivo'))
+            bol_debito = int(request.form.get('boletas_debito') or 0)
+            bol_credito = int(request.form.get('boletas_credito') or 0)
+            bol_mp = int(request.form.get('boletas_mp') or 0)
+            bol_efectivo = int(request.form.get('boletas_efectivo') or 0)
             gastos = clean_and_validate(request.form.get('gastos')) or 0
             obs = request.form.get('observaciones', '').strip()
             companion_id = request.form.get('companion_id')
@@ -116,10 +121,11 @@ def register_worker_routes(app):
 
             c.execute('''INSERT INTO rendiciones 
                         (worker_id, companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                        venta_debito, venta_credito, venta_mp, venta_efectivo, gastos, observaciones, worker_comision, companion_comision) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                        venta_debito, venta_credito, venta_mp, venta_efectivo, boletas_debito, boletas_credito, boletas_mp, boletas_efectivo, gastos, observaciones, worker_comision, companion_comision) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                         (session['user_id'], companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                    debito, credito, mp, efectivo, gastos, obs, worker_comision, companion_comision))
+                    debito, credito, mp, efectivo, bol_debito, bol_credito, bol_mp, bol_efectivo, gastos, obs, worker_comision, companion_comision))
+            
             rendicion_id = c.lastrowid
 
             for key, value in request.form.items():
