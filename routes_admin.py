@@ -314,10 +314,12 @@ def register_admin_routes(app):
         rendiciones_completas = []
 
         for r in rendiciones_basicas:
+            # Cambia esto:
             c.execute('''
                 SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
-                       (ri.cantidad * ri.precio_historico) as total_linea,
-                       (ri.cantidad * ri.comision_historica) as total_comision
+                    (ri.cantidad * ri.precio_historico) as total_linea,
+                    (ri.cantidad * ri.comision_historica) as total_comision,
+                    ri.id  -- <--- Agregamos el ID de la fila aquí (será el índice 6)
                 FROM rendicion_items ri
                 JOIN productos p ON ri.producto_id = p.id
                 WHERE ri.rendicion_id = ?

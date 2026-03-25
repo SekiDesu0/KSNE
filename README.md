@@ -38,6 +38,7 @@ services:
 - ver como funcionan los productos / precios de HC
 
 # TODO general:
+- generar regitro centros comerciales
 - generar reportes y exportar a excel
 - tabla de productos vendidos durante el mes
 - formulario de cosas robadas
@@ -46,7 +47,6 @@ services:
 - arrglar colores en modo claro y oscuro
 - separar productos para tiendas
 - limpiar requirements.txt
-- mostrar rendiciones antiguas
 - mostrar total de ventas con graficos en el index(?)
 - mostrar ventas diarias por modulo y zona(?)
 - formulario de perdidas en el dashboard(?) o hub
