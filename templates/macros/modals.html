@@ -269,11 +269,8 @@
                             </div>
                         </div>
 
-                        <div class="card shadow-sm border-danger">
-                            <div class="card-header bg-danger text-white">Gastos y Observaciones</div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-3">
-                                    <strong class="text-danger">Monto Gastos:</strong>
+                        <div class="card shadow-sm border-danger mb-0"> <div class="card-header bg-danger text-white fw-bold py-1">Gastos y Observaciones</div> <div class="card-body py-2">
+                                <div class="mb-1"> <label class="small text-danger fw-bold mb-0">Monto Gastos</label> ```
                                     <strong class="text-danger">-${{ "{:,.0f}".format(rendicion[8] or 0).replace(',', '.') }}</strong>
                                 </div>
                                 <div>
@@ -303,14 +300,14 @@
                 <h5 class="modal-title">Editar Rendición #{{ rendicion[0] }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="{{ url_for('edit_rendicion', id=rendicion[0]) }}">
-                <div class="modal-body text-start">
+            <div class="modal-body text-start">
+                <form method="POST" action="{{ url_for('edit_rendicion', id=rendicion[0]) }}" id="editRendicionForm_{{ rendicion[0] }}">
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header bg-secondary text-white">Productos Vendidos</div>
                                 <div class="card-body p-0">
-                                    <div class="table-responsive">
+                                    <div class="table-responsive custom-scrollbar" style="max-height: 450px;">
                                         <table class="table table-striped mb-0 text-nowrap">
                                             <thead class="table-dark">
                                                 <tr>
@@ -341,7 +338,7 @@
                                                 <tr>
                                                     <td colspan="3" class="text-end fw-bold">Total Calculado por Sistema:</td>
                                                     <td class="text-end fw-bold fs-6 text-primary" id="sys_total_{{ rendicion[0] }}">
-                                                        ${{ "{:,.0f}".format(rendicion[17] or 0).replace(',', '.') }}
+                                                        ${{ "{:,.0f}".format(rendicion[21] or 0).replace(',', '.') }}
                                                     </td>
                                                 </tr>
                                             </tfoot>
@@ -372,9 +369,9 @@
                                         </select>
                                         <div class="d-flex justify-content-between align-items-center mt-1">
                                             <div id="badge_worker_{{ rendicion[0] }}"></div>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch" name="worker_comision" id="wc_{{ rendicion[0] }}" {% if rendicion[14] %}checked{% endif %}>
-                                                <label class="form-check-label text-warning small" for="wc_{{ rendicion[0] }}">$ Sí</label>
+                                            <div class="form-check m-0">
+                                                <input class="form-check-input" type="checkbox" name="worker_comision" id="wc_{{ rendicion[0] }}" {% if rendicion[14] %}checked{% endif %}>
+                                                <label class="form-check-label text-warning small fw-bold" for="wc_{{ rendicion[0] }}">Recive Comisión</label>
                                             </div>
                                         </div>
                                     </div>
@@ -391,9 +388,9 @@
                                         </select>
                                         <div class="d-flex justify-content-between align-items-center mt-1" id="comp_com_div_{{ rendicion[0] }}" {% if not rendicion[12] %}style="display:none;"{% endif %}>
                                             <div id="badge_comp_{{ rendicion[0] }}"></div>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch" name="companion_comision" id="cc_{{ rendicion[0] }}" {% if rendicion[15] %}checked{% endif %}>
-                                                <label class="form-check-label text-warning small" for="cc_{{ rendicion[0] }}">$ Sí</label>
+                                            <div class="form-check m-0">
+                                                <input class="form-check-input" type="checkbox" name="companion_comision" id="cc_{{ rendicion[0] }}" {% if rendicion[15] %}checked{% endif %}>
+                                                <label class="form-check-label text-warning small fw-bold" for="cc_{{ rendicion[0] }}">Recive Comisión</label>
                                             </div>
                                         </div>
                                     </div>
@@ -458,11 +455,12 @@
                             </div>
                         </div>
                     </div>
-                </div> <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-4">Guardar Cambios</button>
-                </div>
-            </form>
+                </form>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="editRendicionForm_{{ rendicion[0] }}" class="btn btn-primary btn-sm px-4">Guardar Cambios</button>
+            </div>
         </div>
     </div>
 </div>

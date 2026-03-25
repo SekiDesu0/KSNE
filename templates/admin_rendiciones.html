@@ -7,7 +7,75 @@
 {% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Historial de Rendiciones</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Historial de Rendiciones</h2>
+</div>
+
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-body bg-body-tertiary rounded p-3">
+        <form method="GET" action="{{ url_for('admin_rendiciones') }}" id="filterForm">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Año</label>
+                    <select name="anio" class="form-select form-select-sm">
+                        {% for anio in anios_disponibles %}
+                        <option value="{{ anio }}" {% if anio_actual == anio %}selected{% endif %}>{{ anio }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted mb-1">Mes</label>
+                    <select name="mes" class="form-select form-select-sm">
+                        <option value="01" {% if mes_actual == '01' %}selected{% endif %}>Enero</option>
+                        <option value="02" {% if mes_actual == '02' %}selected{% endif %}>Febrero</option>
+                        <option value="03" {% if mes_actual == '03' %}selected{% endif %}>Marzo</option>
+                        <option value="04" {% if mes_actual == '04' %}selected{% endif %}>Abril</option>
+                        <option value="05" {% if mes_actual == '05' %}selected{% endif %}>Mayo</option>
+                        <option value="06" {% if mes_actual == '06' %}selected{% endif %}>Junio</option>
+                        <option value="07" {% if mes_actual == '07' %}selected{% endif %}>Julio</option>
+                        <option value="08" {% if mes_actual == '08' %}selected{% endif %}>Agosto</option>
+                        <option value="09" {% if mes_actual == '09' %}selected{% endif %}>Septiembre</option>
+                        <option value="10" {% if mes_actual == '10' %}selected{% endif %}>Octubre</option>
+                        <option value="11" {% if mes_actual == '11' %}selected{% endif %}>Noviembre</option>
+                        <option value="12" {% if mes_actual == '12' %}selected{% endif %}>Diciembre</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small text-muted mb-1">Día</label>
+                    <select name="dia" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        {% for d in dias_disponibles %}
+                        <option value="{{ d }}" {% if dia_actual == d %}selected{% endif %}>{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Zona</label>
+                    <select name="zona_id" id="zonaSelect" class="form-select form-select-sm">
+                        <option value="">Todas las Zonas</option>
+                        {% for z in zonas %}
+                        <option value="{{ z[0] }}" {% if zona_actual|string == z[0]|string %}selected{% endif %}>{{ z[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Módulo</label>
+                    <select name="modulo_id" id="moduloSelect" class="form-select form-select-sm">
+                        <option value="">Todos los Módulos</option>
+                        {% for m in modulos %}
+                        <option value="{{ m[0] }}" data-zona="{{ m[2] }}" {% if modulo_actual|string == m[0]|string %}selected{% endif %}>{{ m[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Filtrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
@@ -105,7 +173,11 @@
         const toggleSwitch = document.getElementById(toggleId);
         
         if (toggleSwitch && tipoJornada) {
+            // Explicitly set to true if Full Time, false otherwise
             toggleSwitch.checked = (tipoJornada === 'Full Time');
+        } else if (toggleSwitch && !selectElement.value) {
+            // If "Sin acompañante" is selected, turn it off
+             toggleSwitch.checked = false;
         }
         
         // Actualizar el badge también
@@ -204,6 +276,37 @@
                 alert("Un trabajador no puede ser su propio acompañante. Por favor, corrige la selección.");
             }
         });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const zonaSelect = document.getElementById('zonaSelect');
+        const moduloSelect = document.getElementById('moduloSelect');
+        const moduloOptions = Array.from(moduloSelect.options);
+
+        function filterModulos() {
+            const selectedZona = zonaSelect.value;
+            
+            moduloOptions.forEach(option => {
+                if (option.value === "") {
+                    // Siempre mostramos "Todos los Módulos"
+                    option.style.display = '';
+                } else if (!selectedZona || option.dataset.zona === selectedZona) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                    // Si el módulo seleccionado acaba de ocultarse, reseteamos el select
+                    if (option.selected) {
+                        moduloSelect.value = "";
+                    }
+                }
+            });
+        }
+
+        zonaSelect.addEventListener('change', filterModulos);
+        // Ejecutar al cargar la página por si ya viene con una zona filtrada
+        filterModulos();
     });
 </script>
 {% endblock %}

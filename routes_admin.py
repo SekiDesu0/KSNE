@@ -296,10 +296,27 @@ def register_admin_routes(app):
     @app.route('/admin/rendiciones')
     @admin_required
     def admin_rendiciones():
+        # Capturamos todos los filtros
+        mes_seleccionado = request.args.get('mes')
+        anio_seleccionado = request.args.get('anio')
+        dia_seleccionado = request.args.get('dia')
+        zona_id_seleccionada = request.args.get('zona_id')
+        modulo_id_seleccionado = request.args.get('modulo_id')
+        
+        # Si no viene la variable 'mes' en la URL, significa que es la primera vez que entramos
+        if request.args.get('mes') is None:
+            hoy = date.today()
+            mes_seleccionado = f"{hoy.month:02d}"
+            anio_seleccionado = str(hoy.year)
+            dia_seleccionado = f"{hoy.day:02d}" # <-- Forzamos el día actual
+        
+        mes_seleccionado = mes_seleccionado.zfill(2)
+
         conn = get_db_connection()
         c = conn.cursor()
         
-        c.execute('''
+        # Construimos la consulta base tipo Lego
+        query = '''
             SELECT r.id, r.fecha, w.name, m.name,
                 r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
                 c_w.name, r.worker_id, r.companion_id, r.modulo_id,
@@ -309,19 +326,35 @@ def register_admin_routes(app):
             JOIN workers w ON r.worker_id = w.id
             JOIN modulos m ON r.modulo_id = m.id
             LEFT JOIN workers c_w ON r.companion_id = c_w.id
-            ORDER BY r.fecha DESC, r.id DESC
-        ''')
+            WHERE strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
+        '''
+        params = [mes_seleccionado, anio_seleccionado]
+
+        # Añadimos las piezas extra si el usuario las seleccionó
+        if dia_seleccionado:
+            query += " AND strftime('%d', r.fecha) = ?"
+            params.append(dia_seleccionado.zfill(2))
+            
+        if zona_id_seleccionada:
+            query += " AND m.zona_id = ?"
+            params.append(zona_id_seleccionada)
+            
+        if modulo_id_seleccionado:
+            query += " AND r.modulo_id = ?"
+            params.append(modulo_id_seleccionado)
+
+        query += " ORDER BY r.fecha DESC, r.id DESC"
+        
+        c.execute(query, tuple(params))
         rendiciones_basicas = c.fetchall()
-
+        
         rendiciones_completas = []
-
         for r in rendiciones_basicas:
-            # Cambia esto:
             c.execute('''
                 SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
                     (ri.cantidad * ri.precio_historico) as total_linea,
                     (ri.cantidad * ri.comision_historica) as total_comision,
-                    ri.id  -- <--- Agregamos el ID de la fila aquí (será el índice 6)
+                    ri.id
                 FROM rendicion_items ri
                 JOIN productos p ON ri.producto_id = p.id
                 WHERE ri.rendicion_id = ?
@@ -330,22 +363,42 @@ def register_admin_routes(app):
 
             total_calculado = sum(item[4] for item in items)
             comision_total = sum(item[5] for item in items)
-
             r_completa = r + (items, total_calculado, comision_total)
             rendiciones_completas.append(r_completa)
 
+        # Cargar catálogos para los selects
         c.execute("SELECT id, name, tipo, modulo_id FROM workers WHERE is_admin = 0 ORDER BY name")
         workers = c.fetchall()
         
-        c.execute("SELECT id, name FROM modulos ORDER BY name")
+        # Ahora traemos el zona_id para poder filtrar los módulos por zona en el frontend
+        c.execute("SELECT id, name, zona_id FROM modulos ORDER BY name")
         modulos = c.fetchall()
+        
+        c.execute("SELECT id, name FROM zonas ORDER BY name")
+        zonas = c.fetchall()
+
+        c.execute("SELECT DISTINCT strftime('%Y', fecha) FROM rendiciones ORDER BY 1 DESC")
+        anios_db = c.fetchall()
+        anios_disponibles = [row[0] for row in anios_db] if anios_db else [str(date.today().year)]
+        if str(date.today().year) not in anios_disponibles:
+            anios_disponibles.insert(0, str(date.today().year))
 
         conn.close()
         
+        dias_disponibles = [f"{d:02d}" for d in range(1, 32)]
+
         return render_template('admin_rendiciones.html', 
                                rendiciones=rendiciones_completas,
                                workers=workers,
-                               modulos=modulos)
+                               modulos=modulos,
+                               zonas=zonas,
+                               mes_actual=mes_seleccionado,
+                               anio_actual=anio_seleccionado,
+                               dia_actual=dia_seleccionado,
+                               zona_actual=zona_id_seleccionada,
+                               modulo_actual=modulo_id_seleccionado,
+                               anios_disponibles=anios_disponibles,
+                               dias_disponibles=dias_disponibles)
 
     @app.route('/admin/rendiciones/delete/<int:id>', methods=['POST'])
     @admin_required
