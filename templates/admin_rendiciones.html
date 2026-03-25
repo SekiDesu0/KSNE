@@ -1,5 +1,5 @@
 {% extends "macros/base.html" %}
-{% from 'macros/modals.html' import rendicion_detail_modal, confirm_modal, edit_rendicion_modal %}
+{% from 'macros/modals.html' import alert_modal, rendicion_detail_modal, confirm_modal, edit_rendicion_modal %}
 
 {% block title %}Historial de Rendiciones{% endblock %}
 
@@ -70,6 +70,7 @@
         </table>
     </div>
 </div>
+{{ alert_modal(id='errorPersonaModal', title='Error de Validación', message='') }}
 {% endblock %}
 
 {% block scripts %}
@@ -141,7 +142,24 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const editModals = document.querySelectorAll('[id^="editRendicion"]');
-        
+        const editForms = document.querySelectorAll('form[action*="/admin/rendiciones/edit/"]');
+        const errorModalEl = document.getElementById('errorPersonaModal');
+        const errorModal = new bootstrap.Modal(errorModalEl);
+        const errorBody = document.getElementById('errorPersonaModalBody');
+
+        editForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const workerId = this.querySelector('select[name="worker_id"]').value;
+                const companionId = this.querySelector('select[name="companion_id"]').value;
+
+                if (companionId && workerId === companionId) {
+                    e.preventDefault();
+                    errorBody.innerHTML = "<strong>Error:</strong> El trabajador titular y el acompañante no pueden ser la misma persona. Por favor, selecciona a alguien más.";
+                    errorModal.show();
+                }
+            });
+        });
+
         editModals.forEach(modal => {
             // Inicializar badges al abrir
             modal.addEventListener('show.bs.modal', function() {
@@ -161,6 +179,30 @@
                     this.querySelectorAll('.prod-qty-input').forEach(inp => recalcProductLine(inp));
                 }
             });
+        });
+    });
+
+    function validarNombresDiferentes(rendicionId) {
+        const workerSelect = document.querySelector(`select[name="worker_id"]`);
+        const companionSelect = document.querySelector(`select[name="companion_id"]`);
+        
+        if (companionSelect.value && workerSelect.value === companionSelect.value) {
+            alert("Error: El trabajador titular y el acompañante no pueden ser la misma persona.");
+            return false;
+        }
+        return true;
+    }
+
+    // Vincula esta validación al evento submit del formulario de edición
+    document.querySelectorAll('form[action*="edit_rendicion"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const workerSelect = this.querySelector('select[name="worker_id"]');
+            const companionSelect = this.querySelector('select[name="companion_id"]');
+            
+            if (companionSelect.value && workerSelect.value === companionSelect.value) {
+                e.preventDefault();
+                alert("Un trabajador no puede ser su propio acompañante. Por favor, corrige la selección.");
+            }
         });
     });
 </script>

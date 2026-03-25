@@ -332,7 +332,7 @@ def register_admin_routes(app):
             r_completa = r + (items, total_calculado, comision_total)
             rendiciones_completas.append(r_completa)
 
-        c.execute("SELECT id, name, tipo FROM workers WHERE is_admin = 0 ORDER BY name")
+        c.execute("SELECT id, name, tipo, modulo_id FROM workers WHERE is_admin = 0 ORDER BY name")
         workers = c.fetchall()
         
         c.execute("SELECT id, name FROM modulos ORDER BY name")
@@ -372,7 +372,9 @@ def register_admin_routes(app):
         worker_id = request.form.get('worker_id')
         modulo_id = request.form.get('modulo_id')  # Asegúrate de tener el input hidden en el HTML
         companion_id = request.form.get('companion_id') or None
-        
+        if companion_id and worker_id == companion_id:
+            flash("Error: No puedes asignarte a ti mismo como acompañante.", "danger")
+            return redirect(url_for('admin_rendiciones'))
         worker_comision = 1 if request.form.get('worker_comision') else 0
         companion_comision = 1 if request.form.get('companion_comision') else 0
 
