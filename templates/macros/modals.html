@@ -486,7 +486,7 @@
                                     <h5 class="card-title mb-0">Detalle de Ventas</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Análisis detallado de ventas diarias, productos vendidos y consolidado mensual.</p>
-                                <a href="{{ url_for('report_modulo_periodo', modulo_id=modulo_id) }}" class="btn btn-primary w-100 mt-3">Generar Reporte</a>
+                                <a href="{{ url_for('report_modulo_periodo', modulo_id=modulo_id) }}" class="btn btn-outline-primary w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>
@@ -501,7 +501,7 @@
                                     <h5 class="card-title mb-0">Comisiones</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Cálculo de comisiones generadas por los trabajadores en este módulo.</p>
-                                <a href="{{ url_for('report_modulo_comisiones', modulo_id=modulo_id) }}" class="btn btn-success w-100 mt-3">Generar Reporte</a>
+                                <a href="{{ url_for('report_modulo_comisiones', modulo_id=modulo_id) }}" class="btn btn-outline-success w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>
@@ -516,7 +516,7 @@
                                     <h5 class="card-title mb-0">Control de Horarios</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Registro de horas de entrada y salida de los trabajadores y acompañantes.</p>
-                                <a href="{{ url_for('report_modulo_horarios', modulo_id=modulo_id) }}" class="btn btn-warning w-100 mt-3">Generar Reporte</a>
+                                <a href="{{ url_for('report_modulo_horarios', modulo_id=modulo_id) }}" class="btn btn-outline-warning w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>
@@ -531,7 +531,7 @@
                                     <h5 class="card-title mb-0">Centros Comerciales</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Reporte de datos exigidos por la administración del centro comercial.</p>
-                                <button class="btn btn-outline-info w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                                <a href="{{ url_for('report_modulo_centros_comerciales', modulo_id=modulo_id) }}" class="btn btn-outline-info w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>
@@ -546,7 +546,7 @@
                                     <h5 class="card-title mb-0">Cálculo de IVA</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Proyección de impuestos basados en las ventas declaradas.</p>
-                                <button class="btn btn-outline-secondary w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                                <a href="{{ url_for('report_modulo_calculo_iva', modulo_id=modulo_id) }}" class="btn btn-outline-secondary w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>

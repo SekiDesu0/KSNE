@@ -1,0 +1,96 @@
+{% extends "macros/base.html" %}
+
+{% block title %}Reporte: Centros Comerciales - {{ modulo_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .table-container {
+        max-height: 75vh;
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+    
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background-color: var(--bs-body-bg);
+        border-right: 2px solid var(--bs-border-color) !important;
+    }
+    
+    thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background-color: var(--bs-body-bg);
+        box-shadow: inset 0 -1px 0 var(--bs-border-color);
+    }
+
+    thead th.sticky-col {
+        z-index: 3;
+    }
+    
+    .numeric-cell {
+        font-family: 'Courier New', Courier, monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('admin_reportes_index') }}" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-arrow-left"></i> Volver al Menú
+        </a>
+        <h2>Registro Centros Comerciales</h2>
+    </div>
+    <div class="text-end">
+        <div><strong class="text-primary fs-5">{{ modulo_name }}</strong></div>
+        <div class="text-muted"><small>Período: {{ mes_nombre }}</small></div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive table-container custom-scrollbar">
+            <table class="table table-bordered table-hover table-sm mb-0 text-center text-nowrap align-middle">
+                <thead>
+                    <tr>
+                        <th class="sticky-col py-3 align-middle bg-dark text-white" style="width: 10%;">FECHA</th>
+                        <th class="py-3 bg-info text-dark" style="width: 20%;">Nº TRANSACCION<br>RED COMPRA</th>
+                        <th class="py-3 bg-warning text-dark" style="width: 20%;">Nº DE BOLETAS<br>EFECTIVO</th>
+                        <th class="py-3 bg-primary text-white" style="width: 20%;">TOTAL<br>TRANSACCIONES</th>
+                        <th class="py-3 bg-success text-white text-end pe-4" style="width: 30%;">VENTA NETA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dia in dias_en_periodo %}
+                    {% set d = data_por_dia[dia.num] %}
+                    <tr>
+                        <td class="fw-bold sticky-col p-0 align-middle">
+                            <div class="d-flex justify-content-between align-items-center px-2 py-1 h-100">
+                                <span class="text-muted" style="font-weight: 500;">{{ dia.name }}</span>
+                                <span>{{ dia.num }}</span>
+                            </div>
+                        </td>
+                        <td class="numeric-cell bg-info-subtle text-info fw-bold">{{ d.red_compra }}</td>
+                        <td class="numeric-cell bg-warning-subtle text-warning fw-bold">{{ d.efectivo }}</td>
+                        <td class="numeric-cell bg-primary-subtle text-primary fw-bold">{{ d.total_trans }}</td>
+                        <td class="numeric-cell bg-success-subtle text-success fw-bold text-end pe-4">${{ "{:,.0f}".format(d.venta_neta).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="fw-bold fs-6">
+                    <tr>
+                        <td class="sticky-col text-center py-2 bg-dark text-white">TOTALES</td>
+                        <td class="numeric-cell py-2 bg-info text-dark">{{ totales.red_compra }}</td>
+                        <td class="numeric-cell py-2 bg-warning text-dark">{{ totales.efectivo }}</td>
+                        <td class="numeric-cell py-2 bg-primary text-white">{{ totales.total_trans }}</td>
+                        <td class="numeric-cell py-2 bg-success text-white text-end pe-4">${{ "{:,.0f}".format(totales.venta_neta).replace(',', '.') }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

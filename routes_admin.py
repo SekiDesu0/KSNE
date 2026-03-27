@@ -761,3 +761,160 @@ def register_admin_routes(app):
                                mes_nombre=f'{mes_actual:02}/{anio_actual}',
                                workers_data=workers_data,
                                dias_en_periodo=dias_en_periodo)
+        
+        
+    @app.route('/admin/reportes/modulo/<int:modulo_id>/centros_comerciales')
+    @admin_required
+    def report_modulo_centros_comerciales(modulo_id):
+        import calendar
+        from datetime import date
+        
+        mes_actual = date.today().month
+        anio_actual = date.today().year
+        
+        # Obtenemos la cantidad real de días del mes
+        _, num_dias = calendar.monthrange(anio_actual, mes_actual)
+        
+        dias_en_periodo = []
+        for d in range(1, num_dias + 1):
+            dia_semana = date(anio_actual, mes_actual, d).weekday()
+            dias_en_periodo.append({
+                'num': f'{d:02}',
+                'name': ['L', 'M', 'M', 'J', 'V', 'S', 'D'][dia_semana]
+            })
+            
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+        modulo_info = c.fetchone()
+        if not modulo_info:
+            conn.close()
+            flash("Módulo no encontrado.", "danger")
+            return redirect(url_for('admin_reportes_index'))
+        modulo_name = modulo_info[0]
+
+        c.execute('''
+            SELECT strftime('%d', r.fecha) as dia,
+                   SUM(r.boletas_debito + r.boletas_credito + r.boletas_mp) as trans_red_compra,
+                   SUM(r.boletas_efectivo) as boletas_efectivo,
+                   SUM(r.venta_debito + r.venta_credito + r.venta_mp + r.venta_efectivo) as venta_total
+            FROM rendiciones r
+            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
+            GROUP BY dia
+        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
+        
+        resultados = c.fetchall()
+        conn.close()
+
+        data_por_dia = {f'{d:02}': {'red_compra': 0, 'efectivo': 0, 'total_trans': 0, 'venta_neta': 0} for d in range(1, num_dias + 1)}
+        totales = {'red_compra': 0, 'efectivo': 0, 'total_trans': 0, 'venta_neta': 0}
+
+        for row in resultados:
+            dia, red_compra, efectivo, venta_total = row
+            if dia not in data_por_dia:
+                continue
+                
+            red_compra = red_compra or 0
+            efectivo = efectivo or 0
+            venta_total = venta_total or 0
+            
+            total_trans = red_compra + efectivo
+            venta_neta = round(venta_total / 1.19) 
+            
+            data_por_dia[dia] = {
+                'red_compra': red_compra,
+                'efectivo': efectivo,
+                'total_trans': total_trans,
+                'venta_neta': venta_neta
+            }
+            
+            totales['red_compra'] += red_compra
+            totales['efectivo'] += efectivo
+            totales['total_trans'] += total_trans
+            totales['venta_neta'] += venta_neta
+
+        return render_template('admin_report_cc.html',
+                               modulo_name=modulo_name,
+                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
+                               dias_en_periodo=dias_en_periodo,
+                               data_por_dia=data_por_dia,
+                               totales=totales)
+        
+    @app.route('/admin/reportes/modulo/<int:modulo_id>/calculo_iva')
+    @admin_required
+    def report_modulo_calculo_iva(modulo_id):
+        import calendar
+        from datetime import date
+        
+        mes_actual = date.today().month
+        anio_actual = date.today().year
+        
+        _, num_dias = calendar.monthrange(anio_actual, mes_actual)
+        
+        dias_en_periodo = []
+        for d in range(1, num_dias + 1):
+            dia_semana = date(anio_actual, mes_actual, d).weekday()
+            dias_en_periodo.append({
+                'num': f'{d:02}',
+                'name': ['L', 'M', 'M', 'J', 'V', 'S', 'D'][dia_semana]
+            })
+            
+        conn = get_db_connection()
+        c = conn.cursor()
+
+        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+        modulo_info = c.fetchone()
+        if not modulo_info:
+            conn.close()
+            flash("Módulo no encontrado.", "danger")
+            return redirect(url_for('admin_reportes_index'))
+        modulo_name = modulo_info[0]
+
+        c.execute('''
+            SELECT strftime('%d', r.fecha) as dia,
+                   SUM(r.venta_efectivo) as venta_efectivo,
+                   SUM(r.venta_debito + r.venta_credito + r.venta_mp) as venta_tbk
+            FROM rendiciones r
+            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
+            GROUP BY dia
+        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
+        
+        resultados = c.fetchall()
+        conn.close()
+
+        data_por_dia = {f'{d:02}': {'efectivo': 0, 'tbk': 0, 'total': 0, 'porcentaje': 0} for d in range(1, num_dias + 1)}
+        totales = {'efectivo': 0, 'tbk': 0, 'total': 0, 'porcentaje': 0}
+
+        for row in resultados:
+            dia, efectivo, tbk = row
+            if dia not in data_por_dia:
+                continue
+                
+            efectivo = efectivo or 0
+            tbk = tbk or 0
+            total = efectivo + tbk
+            
+            # Evitar dividir por cero cuando no se vende nada en el día
+            porcentaje = round((efectivo / total) * 100) if total > 0 else 0
+            
+            data_por_dia[dia] = {
+                'efectivo': efectivo,
+                'tbk': tbk,
+                'total': total,
+                'porcentaje': porcentaje
+            }
+            
+            totales['efectivo'] += efectivo
+            totales['tbk'] += tbk
+            totales['total'] += total
+
+        if totales['total'] > 0:
+            totales['porcentaje'] = round((totales['efectivo'] / totales['total']) * 100)
+
+        return render_template('admin_report_iva.html',
+                               modulo_name=modulo_name,
+                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
+                               dias_en_periodo=dias_en_periodo,
+                               data_por_dia=data_por_dia,
+                               totales=totales)
