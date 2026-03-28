@@ -1,4 +1,5 @@
 {% extends "macros/base.html" %}
+{% from "macros/modals.html" import report_filters %}
 
 {% block title %}Reporte: Horarios - {{ modulo_name }}{% endblock %}
 
@@ -45,7 +46,16 @@
         <div class="text-muted"><small>Período: {{ mes_nombre }}</small></div>
     </div>
 </div>
-
+{{ report_filters(
+    url_for('report_modulo_periodo', modulo_id=modulo_id),
+    workers_list,
+    worker_actual,
+    dia_actual,
+    [('01','Ene'),('02','Feb'),('03','Mar'),('04','Abr'),('05','May'),('06','Jun'),('07','Jul'),('08','Ago'),('09','Sep'),('10','Oct'),('11','Nov'),('12','Dic')],
+    mes_actual,
+    anios_disponibles,
+    anio_actual
+) }}
 {% if workers_data %}
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
@@ -60,8 +70,8 @@
                     </tr>
                     <tr>
                         {% for w_id, data in workers_data.items() %}
-                            <th class="bg-body-tertiary">Ent</th>
-                            <th class="bg-body-tertiary">Sal</th>
+                            <th class="bg-body-tertiary">Entrada</th>
+                            <th class="bg-body-tertiary">Salida</th>
                             <th class="bg-success-subtle text-success">Hrs</th>
                         {% endfor %}
                     </tr>

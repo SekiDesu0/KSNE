@@ -3,7 +3,7 @@ from flask import app, render_template, request, redirect, url_for, flash, sessi
 from werkzeug.security import generate_password_hash
 from datetime import date, datetime
 from database import get_db_connection
-from utils import admin_required, validate_rut, format_rut, validate_phone, format_phone, generate_random_password
+from utils import admin_required, validate_rut, format_rut, validate_phone, format_phone, generate_random_password, get_report_params, get_common_report_data
 import calendar
 
 def register_admin_routes(app):
@@ -508,413 +508,146 @@ def register_admin_routes(app):
     @app.route('/admin/reportes/modulo/<int:modulo_id>')
     @admin_required
     def report_modulo_periodo(modulo_id):
-        mes_actual = date.today().month
-        anio_actual = date.today().year
-        dias_en_periodo = [f'{d:02}' for d in range(1, 32)] 
-        
+        anio, mes, dia_f, worker_id = get_report_params()
         conn = get_db_connection()
         c = conn.cursor()
-
-        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-        modulo_info = c.fetchone()
-        if not modulo_info:
-            conn.close()
-            flash("Módulo no encontrado.", "danger")
-            return redirect(url_for('admin_reportes_index'))
-        modulo_name = modulo_info[0]
-
-        c.execute('''
-            SELECT strftime('%d', r.fecha) as dia,
-                   SUM(r.venta_debito) as debito,
-                   SUM(r.venta_credito) as credito,
-                   SUM(r.venta_mp) as mp,
-                   SUM(r.venta_efectivo) as efectivo,
-                   SUM(r.gastos) as gastos
-            FROM rendiciones r
-            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
-            GROUP BY dia
-        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
-        finanzas_db = c.fetchall()
-
-        c.execute('''
-            SELECT strftime('%d', r.fecha) as dia,
-                   SUM(ri.cantidad * ri.comision_historica * CASE WHEN r.worker_comision = 1 OR r.companion_comision = 1 THEN 1 ELSE 0 END) as comision_total
-            FROM rendicion_items ri
-            JOIN rendiciones r ON ri.rendicion_id = r.id
-            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
-            GROUP BY dia
-        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
-        comisiones_db = c.fetchall()
+        mod_name, workers_list, anios_list = get_common_report_data(c, modulo_id)
         
+        where_clause = "WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?"
+        params = [modulo_id, mes, anio]
+        if dia_f: where_clause += " AND strftime('%d', r.fecha) = ?"; params.append(dia_f.zfill(2))
+        if worker_id: where_clause += " AND r.worker_id = ?"; params.append(worker_id)
+
+        c.execute(f"SELECT strftime('%d', r.fecha) as dia, SUM(r.venta_debito), SUM(r.venta_credito), SUM(r.venta_mp), SUM(r.venta_efectivo), SUM(r.gastos) FROM rendiciones r {where_clause} GROUP BY dia", tuple(params))
+        finanzas = c.fetchall()
+        c.execute(f"SELECT strftime('%d', r.fecha) as dia, SUM(ri.cantidad * ri.comision_historica) FROM rendicion_items ri JOIN rendiciones r ON ri.rendicion_id = r.id {where_clause} AND (r.worker_comision = 1 OR r.companion_comision = 1) GROUP BY dia", tuple(params))
+        comisiones = {row[0]: row[1] for row in c.fetchall()}
+        
+        _, num_dias = calendar.monthrange(int(anio), int(mes))
+        dias_en_periodo = [f'{d:02d}' for d in range(1, num_dias + 1)]
+        data_por_dia = {d: {'debito':0,'credito':0,'mp':0,'efectivo':0,'gastos':0,'comision':0,'venta_total':0} for d in dias_en_periodo}
+        for r in finanzas:
+            d = r[0]
+            vt = sum(filter(None, r[1:5]))
+            data_por_dia[d].update({'debito':r[1] or 0,'credito':r[2] or 0,'mp':r[3] or 0,'efectivo':r[4] or 0,'gastos':r[5] or 0,'venta_total':vt,'comision':comisiones.get(d, 0)})
+
+        totales_mes = {k: sum(d[k] for d in data_por_dia.values()) for k in data_por_dia['01'].keys()}
+        dias_activos = sum(1 for d in data_por_dia.values() if d['venta_total'] > 0)
         conn.close()
+        return render_template('admin_report_modulo.html', modulo_name=mod_name, modulo_id=modulo_id, mes_nombre=f"{mes}/{anio}", dias_en_periodo=dias_en_periodo, data_por_dia=data_por_dia, totales_mes=totales_mes, dias_activos=dias_activos, workers_list=workers_list, worker_actual=worker_id, dia_actual=dia_f, mes_actual=mes, anio_actual=anio, anios_disponibles=anios_list)
 
-        data_por_dia = {dia: {'debito': 0, 'credito': 0, 'mp': 0, 'efectivo': 0, 'gastos': 0, 'comision': 0, 'venta_total': 0} for dia in dias_en_periodo}
-
-        for row in finanzas_db:
-            dia, debito, credito, mp, efectivo, gastos = row
-            venta_total = (debito or 0) + (credito or 0) + (mp or 0) + (efectivo or 0)
-            data_por_dia[dia].update({
-                'debito': debito or 0,
-                'credito': credito or 0,
-                'mp': mp or 0,
-                'efectivo': efectivo or 0,
-                'gastos': gastos or 0,
-                'venta_total': venta_total
-            })
-
-        for row in comisiones_db:
-            dia, comision = row
-            data_por_dia[dia]['comision'] = comision or 0
-
-        totales_mes = {'debito': 0, 'credito': 0, 'mp': 0, 'efectivo': 0, 'gastos': 0, 'comision': 0, 'venta_total': 0}
-        dias_activos = 0
-        
-        for dia, datos in data_por_dia.items():
-            if datos['venta_total'] > 0 or datos['gastos'] > 0:
-                dias_activos += 1
-            for k in totales_mes.keys():
-                totales_mes[k] += datos[k]
-
-        return render_template('admin_report_modulo.html',
-                               modulo_name=modulo_name,
-                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
-                               dias_en_periodo=dias_en_periodo,
-                               data_por_dia=data_por_dia,
-                               totales_mes=totales_mes,
-                               dias_activos=dias_activos)
-        
     @app.route('/admin/reportes/modulo/<int:modulo_id>/comisiones')
     @admin_required
     def report_modulo_comisiones(modulo_id):
-        mes_actual = date.today().month
-        anio_actual = date.today().year
-        
+        anio, mes, dia_f, worker_id = get_report_params()
         conn = get_db_connection()
         c = conn.cursor()
-
-        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-        modulo_info = c.fetchone()
-        if not modulo_info:
-            conn.close()
-            flash("Módulo no encontrado.", "danger")
-            return redirect(url_for('admin_reportes_index'))
-        modulo_name = modulo_info[0]
-
-        # Fetch rendiciones with commission calculations for this module and month
-        c.execute('''
-            SELECT r.id, strftime('%d', r.fecha) as dia, 
-                   w.id, w.name, w.tipo, r.worker_comision,
-                   cw.id, cw.name, cw.tipo, r.companion_comision,
-                   COALESCE((SELECT SUM(cantidad * comision_historica) FROM rendicion_items WHERE rendicion_id = r.id), 0) as total_comision
-            FROM rendiciones r
-            JOIN workers w ON r.worker_id = w.id
-            LEFT JOIN workers cw ON r.companion_id = cw.id
-            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
-            ORDER BY r.fecha ASC
-        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
-        
+        mod_name, workers_list, anios_list = get_common_report_data(c, modulo_id)
+        where_clause = "WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?"
+        params = [modulo_id, mes, anio]
+        if dia_f: where_clause += " AND strftime('%d', r.fecha) = ?"; params.append(dia_f.zfill(2))
+        if worker_id: where_clause += " AND (r.worker_id = ? OR r.companion_id = ?)"; params.extend([worker_id, worker_id])
+        c.execute(f"SELECT r.id, strftime('%d', r.fecha) as dia, w.id, w.name, w.tipo, r.worker_comision, cw.id, cw.name, cw.tipo, r.companion_comision, (SELECT SUM(cantidad * comision_historica) FROM rendicion_items WHERE rendicion_id = r.id) FROM rendiciones r JOIN workers w ON r.worker_id = w.id LEFT JOIN workers cw ON r.companion_id = cw.id {where_clause}", tuple(params))
         rendiciones = c.fetchall()
-        conn.close()
-
         workers_data = {}
-        
-        for row in rendiciones:
-            r_id, dia, w_id, w_name, w_tipo, w_com, c_id, c_name, c_tipo, c_com, total_com = row
-            
-            w_share = 0
-            c_share = 0
-            
-            # Split logic
-            if w_com and c_com:
-                w_share = total_com / 2
-                c_share = total_com / 2
-            elif w_com:
-                w_share = total_com
-            elif c_com:
-                c_share = total_com
-                
-            # Process Titular Worker
-            if w_id not in workers_data:
-                workers_data[w_id] = {'name': w_name, 'tipo': w_tipo, 'dias': {}, 'total': 0, 'enabled': bool(w_com)}
-            else:
-                if w_com: workers_data[w_id]['enabled'] = True
-            
-            workers_data[w_id]['dias'][dia] = workers_data[w_id]['dias'].get(dia, 0) + w_share
-            workers_data[w_id]['total'] += w_share
-            
-            # Process Companion (if any)
-            if c_id:
-                if c_id not in workers_data:
-                    workers_data[c_id] = {'name': c_name, 'tipo': c_tipo, 'dias': {}, 'total': 0, 'enabled': bool(c_com)}
-                else:
-                    if c_com: workers_data[c_id]['enabled'] = True
-                    
-                workers_data[c_id]['dias'][dia] = workers_data[c_id]['dias'].get(dia, 0) + c_share
-                workers_data[c_id]['total'] += c_share
+        for r in rendiciones:
+            total_com = r[10] or 0
+            # Lógica simplificada: reparte si ambos comisionan
+            for idx, wid, wname, wtipo, wcom in [(0, r[2], r[3], r[4], r[5]), (1, r[6], r[7], r[8], r[9])]:
+                if wid and wcom:
+                    if wid not in workers_data: workers_data[wid] = {'name':wname,'tipo':wtipo,'dias':{},'total':0,'enabled':True}
+                    val = total_com / 2 if (r[5] and r[9]) else total_com
+                    workers_data[wid]['dias'][r[1]] = workers_data[wid]['dias'].get(r[1], 0) + val
+                    workers_data[wid]['total'] += val
+        _, num_dias = calendar.monthrange(int(anio), int(mes))
+        dias_en_periodo = [f'{d:02d}' for d in range(1, num_dias + 1)]
+        conn.close()
+        return render_template('admin_report_comisiones.html', modulo_name=mod_name, modulo_id=modulo_id, mes_nombre=f"{mes}/{anio}", workers_data=dict(sorted(workers_data.items(), key=lambda x:x[1]['name'])), dias_en_periodo=dias_en_periodo, workers_list=workers_list, worker_actual=worker_id, dia_actual=dia_f, mes_actual=mes, anio_actual=anio, anios_disponibles=anios_list)
 
-        # Sort alphabetically so the table doesn't shuffle randomly
-        workers_data = dict(sorted(workers_data.items(), key=lambda item: item[1]['name']))
-        dias_en_periodo = [f'{d:02}' for d in range(1, 32)]
-
-        return render_template('admin_report_comisiones.html',
-                               modulo_name=modulo_name,
-                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
-                               workers_data=workers_data,
-                               dias_en_periodo=dias_en_periodo)
-        
     @app.route('/admin/reportes/modulo/<int:modulo_id>/horarios')
     @admin_required
     def report_modulo_horarios(modulo_id):
-        import calendar
-        from datetime import date, datetime
-        
-        mes_actual = date.today().month
-        anio_actual = date.today().year
-        
+        anio, mes, dia_f, worker_id = get_report_params()
         conn = get_db_connection()
         c = conn.cursor()
-
-        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-        modulo_info = c.fetchone()
-        if not modulo_info:
-            conn.close()
-            flash("Módulo no encontrado.", "danger")
-            return redirect(url_for('admin_reportes_index'))
-        modulo_name = modulo_info[0]
-
-        # 1. Pre-cargar a los trabajadores oficiales del módulo (aunque no hayan trabajado aún)
-        c.execute("SELECT id, name FROM workers WHERE modulo_id = ? AND is_admin = 0", (modulo_id,))
-        assigned_workers = c.fetchall()
-        
-        workers_data = {}
-        for w_id, w_name in assigned_workers:
-            workers_data[w_id] = {'name': w_name, 'dias': {}, 'total_horas': 0.0}
-
-        # 2. Extraer rendiciones del mes/módulo
-        c.execute('''
-            SELECT 
-                r.fecha, 
-                w.id, w.name, r.hora_entrada, r.hora_salida,
-                cw.id, cw.name, r.companion_hora_entrada, r.companion_hora_salida
-            FROM rendiciones r
-            JOIN workers w ON r.worker_id = w.id
-            LEFT JOIN workers cw ON r.companion_id = cw.id
-            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
-            ORDER BY r.fecha ASC
-        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
-        
+        mod_name, workers_list, anios_list = get_common_report_data(c, modulo_id)
+        where_clause = "WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?"
+        params = [modulo_id, mes, anio]
+        if dia_f: where_clause += " AND strftime('%d', r.fecha) = ?"; params.append(dia_f.zfill(2))
+        if worker_id: where_clause += " AND (r.worker_id = ? OR r.companion_id = ?)"; params.extend([worker_id, worker_id])
+        c.execute(f"SELECT r.fecha, w.id, w.name, r.hora_entrada, r.hora_salida, cw.id, cw.name, r.companion_hora_entrada, r.companion_hora_salida FROM rendiciones r JOIN workers w ON r.worker_id = w.id LEFT JOIN workers cw ON r.companion_id = cw.id {where_clause}", tuple(params))
         rendiciones = c.fetchall()
-        conn.close()
-
-        def calc_horas(in_str, out_str):
-            if not in_str or not out_str:
-                return 0.0, "0:00"
+        workers_data = {}
+        def calc_h(i, o):
+            if not i or not o: return 0, "0:00"
             try:
-                t1 = datetime.strptime(in_str, '%H:%M')
-                t2 = datetime.strptime(out_str, '%H:%M')
-                delta = t2 - t1
-                return delta.seconds / 3600, f"{delta.seconds // 3600}:{(delta.seconds % 3600) // 60:02d}"
-            except ValueError:
-                return 0.0, "0:00"
-
+                t1, t2 = datetime.strptime(i, '%H:%M'), datetime.strptime(o, '%H:%M')
+                d = t2 - t1
+                return d.seconds/3600, f"{d.seconds//3600}:{(d.seconds%3600)//60:02d}"
+            except: return 0, "0:00"
         for r in rendiciones:
-            fecha, w_id, w_name, w_in, w_out, c_id, c_name, c_in, c_out = r
-            dia = fecha[-2:] 
-            
-            # Titular (Si no es del módulo, lo metemos con etiqueta de Apoyo)
-            if w_id not in workers_data:
-                workers_data[w_id] = {'name': f"{w_name} (Apoyo)", 'dias': {}, 'total_horas': 0.0}
-            
-            h_dec, h_str = calc_horas(w_in, w_out)
-            workers_data[w_id]['dias'][dia] = {'in': w_in, 'out': w_out, 'hrs': h_str}
-            workers_data[w_id]['total_horas'] += h_dec
-            
-            # Acompañante
-            if c_id and c_in and c_out:
-                if c_id not in workers_data:
-                    workers_data[c_id] = {'name': f"{c_name} (Apoyo)", 'dias': {}, 'total_horas': 0.0}
-                
-                h_dec, h_str = calc_horas(c_in, c_out)
-                workers_data[c_id]['dias'][dia] = {'in': c_in, 'out': c_out, 'hrs': h_str}
-                workers_data[c_id]['total_horas'] += h_dec
+            d = r[0][-2:]
+            for wid, wname, win, wout in [(r[1], r[2], r[3], r[4]), (r[5], r[6], r[7], r[8])]:
+                if wid:
+                    if wid not in workers_data: workers_data[wid] = {'name':wname,'dias':{},'total_horas':0}
+                    h_dec, h_str = calc_h(win, wout)
+                    workers_data[wid]['dias'][d] = {'in':win,'out':wout,'hrs':h_str}
+                    workers_data[wid]['total_horas'] += h_dec
+        for w in workers_data.values():
+            th = w['total_horas']
+            w['total_hrs_str'] = f"{int(th)}:{int((th-int(th))*60):02d}"
+        _, num_dias = calendar.monthrange(int(anio), int(mes))
+        dias_en_periodo = [{'num':f'{d:02d}','name':['L','M','M','J','V','S','D'][date(int(anio),int(mes),d).weekday()]} for d in range(1, num_dias+1)]
+        conn.close()
+        return render_template('admin_report_horarios.html', modulo_name=mod_name, modulo_id=modulo_id, mes_nombre=f"{mes}/{anio}", workers_data=workers_data, dias_en_periodo=dias_en_periodo, workers_list=workers_list, worker_actual=worker_id, dia_actual=dia_f, mes_actual=mes, anio_actual=anio, anios_disponibles=anios_list)
 
-        for w_id in workers_data:
-            th = workers_data[w_id]['total_horas']
-            workers_data[w_id]['total_hrs_str'] = f"{int(th)}:{int(round((th - int(th)) * 60)):02d}"
-
-        # Ordenar alfabéticamente (Los de apoyo quedarán entremezclados por orden alfabético)
-        workers_data = dict(sorted(workers_data.items(), key=lambda x: x[1]['name']))
-        
-        _, num_dias = calendar.monthrange(anio_actual, mes_actual)
-        nombres_dias = ['D', 'L', 'M', 'M', 'J', 'V', 'S'] # Ajustado para que el 0 de Python(Lunes) sea coherente si usas isoweekday
-        
-        dias_en_periodo = []
-        for d in range(1, num_dias + 1):
-            dia_semana = date(anio_actual, mes_actual, d).weekday()
-            dias_en_periodo.append({
-                'num': f'{d:02}',
-                'name': ['L', 'M', 'M', 'J', 'V', 'S', 'D'][dia_semana] # weekday(): Lunes es 0, Domingo es 6
-            })
-
-        return render_template('admin_report_horarios.html',
-                               modulo_name=modulo_name,
-                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
-                               workers_data=workers_data,
-                               dias_en_periodo=dias_en_periodo)
-        
-        
     @app.route('/admin/reportes/modulo/<int:modulo_id>/centros_comerciales')
     @admin_required
     def report_modulo_centros_comerciales(modulo_id):
-        import calendar
-        from datetime import date
-        
-        mes_actual = date.today().month
-        anio_actual = date.today().year
-        
-        # Obtenemos la cantidad real de días del mes
-        _, num_dias = calendar.monthrange(anio_actual, mes_actual)
-        
-        dias_en_periodo = []
-        for d in range(1, num_dias + 1):
-            dia_semana = date(anio_actual, mes_actual, d).weekday()
-            dias_en_periodo.append({
-                'num': f'{d:02}',
-                'name': ['L', 'M', 'M', 'J', 'V', 'S', 'D'][dia_semana]
-            })
-            
+        anio, mes, dia_f, worker_id = get_report_params()
         conn = get_db_connection()
         c = conn.cursor()
-
-        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-        modulo_info = c.fetchone()
-        if not modulo_info:
-            conn.close()
-            flash("Módulo no encontrado.", "danger")
-            return redirect(url_for('admin_reportes_index'))
-        modulo_name = modulo_info[0]
-
-        c.execute('''
-            SELECT strftime('%d', r.fecha) as dia,
-                   SUM(r.boletas_debito + r.boletas_credito + r.boletas_mp) as trans_red_compra,
-                   SUM(r.boletas_efectivo) as boletas_efectivo,
-                   SUM(r.venta_debito + r.venta_credito + r.venta_mp + r.venta_efectivo) as venta_total
-            FROM rendiciones r
-            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
-            GROUP BY dia
-        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
-        
+        mod_name, workers_list, anios_list = get_common_report_data(c, modulo_id)
+        where_clause = "WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?"
+        params = [modulo_id, mes, anio]
+        if dia_f: where_clause += " AND strftime('%d', r.fecha) = ?"; params.append(dia_f.zfill(2))
+        if worker_id: where_clause += " AND r.worker_id = ?"; params.append(worker_id)
+        c.execute(f"SELECT strftime('%d', r.fecha) as dia, SUM(r.boletas_debito + r.boletas_credito + r.boletas_mp), SUM(r.boletas_efectivo), SUM(r.venta_debito + r.venta_credito + r.venta_mp + r.venta_efectivo) FROM rendiciones r {where_clause} GROUP BY dia", tuple(params))
         resultados = c.fetchall()
+        _, num_dias = calendar.monthrange(int(anio), int(mes))
+        data_por_dia = {f'{d:02d}': {'red_compra':0,'efectivo':0,'total_trans':0,'venta_neta':0} for d in range(1, num_dias+1)}
+        totales = {'red_compra':0,'efectivo':0,'total_trans':0,'venta_neta':0}
+        for r in resultados:
+            dia, rc, ef, vt = r[0], r[1] or 0, r[2] or 0, r[3] or 0
+            vn = round(vt/1.19)
+            data_por_dia[dia] = {'red_compra':rc,'efectivo':ef,'total_trans':rc+ef,'venta_neta':vn}
+            for k in totales: totales[k] += data_por_dia[dia][k]
+        dias_en_periodo = [{'num':f'{d:02d}','name':['L','M','M','J','V','S','D'][date(int(anio),int(mes),d).weekday()]} for d in range(1, num_dias+1)]
         conn.close()
+        return render_template('admin_report_cc.html', modulo_name=mod_name, modulo_id=modulo_id, mes_nombre=f"{mes}/{anio}", dias_en_periodo=dias_en_periodo, data_por_dia=data_por_dia, totales=totales, workers_list=workers_list, worker_actual=worker_id, dia_actual=dia_f, mes_actual=mes, anio_actual=anio, anios_disponibles=anios_list)
 
-        data_por_dia = {f'{d:02}': {'red_compra': 0, 'efectivo': 0, 'total_trans': 0, 'venta_neta': 0} for d in range(1, num_dias + 1)}
-        totales = {'red_compra': 0, 'efectivo': 0, 'total_trans': 0, 'venta_neta': 0}
-
-        for row in resultados:
-            dia, red_compra, efectivo, venta_total = row
-            if dia not in data_por_dia:
-                continue
-                
-            red_compra = red_compra or 0
-            efectivo = efectivo or 0
-            venta_total = venta_total or 0
-            
-            total_trans = red_compra + efectivo
-            venta_neta = round(venta_total / 1.19) 
-            
-            data_por_dia[dia] = {
-                'red_compra': red_compra,
-                'efectivo': efectivo,
-                'total_trans': total_trans,
-                'venta_neta': venta_neta
-            }
-            
-            totales['red_compra'] += red_compra
-            totales['efectivo'] += efectivo
-            totales['total_trans'] += total_trans
-            totales['venta_neta'] += venta_neta
-
-        return render_template('admin_report_cc.html',
-                               modulo_name=modulo_name,
-                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
-                               dias_en_periodo=dias_en_periodo,
-                               data_por_dia=data_por_dia,
-                               totales=totales)
-        
     @app.route('/admin/reportes/modulo/<int:modulo_id>/calculo_iva')
     @admin_required
     def report_modulo_calculo_iva(modulo_id):
-        import calendar
-        from datetime import date
-        
-        mes_actual = date.today().month
-        anio_actual = date.today().year
-        
-        _, num_dias = calendar.monthrange(anio_actual, mes_actual)
-        
-        dias_en_periodo = []
-        for d in range(1, num_dias + 1):
-            dia_semana = date(anio_actual, mes_actual, d).weekday()
-            dias_en_periodo.append({
-                'num': f'{d:02}',
-                'name': ['L', 'M', 'M', 'J', 'V', 'S', 'D'][dia_semana]
-            })
-            
+        anio, mes, dia_f, worker_id = get_report_params()
         conn = get_db_connection()
         c = conn.cursor()
-
-        c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-        modulo_info = c.fetchone()
-        if not modulo_info:
-            conn.close()
-            flash("Módulo no encontrado.", "danger")
-            return redirect(url_for('admin_reportes_index'))
-        modulo_name = modulo_info[0]
-
-        c.execute('''
-            SELECT strftime('%d', r.fecha) as dia,
-                   SUM(r.venta_efectivo) as venta_efectivo,
-                   SUM(r.venta_debito + r.venta_credito + r.venta_mp) as venta_tbk
-            FROM rendiciones r
-            WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?
-            GROUP BY dia
-        ''', (modulo_id, f'{mes_actual:02}', str(anio_actual)))
-        
+        mod_name, workers_list, anios_list = get_common_report_data(c, modulo_id)
+        where_clause = "WHERE r.modulo_id = ? AND strftime('%m', r.fecha) = ? AND strftime('%Y', r.fecha) = ?"
+        params = [modulo_id, mes, anio]
+        if dia_f: where_clause += " AND strftime('%d', r.fecha) = ?"; params.append(dia_f.zfill(2))
+        if worker_id: where_clause += " AND r.worker_id = ?"; params.append(worker_id)
+        c.execute(f"SELECT strftime('%d', r.fecha) as dia, SUM(r.venta_efectivo), SUM(r.venta_debito + r.venta_credito + r.venta_mp) FROM rendiciones r {where_clause} GROUP BY dia", tuple(params))
         resultados = c.fetchall()
+        _, num_dias = calendar.monthrange(int(anio), int(mes))
+        data_por_dia = {f'{d:02d}': {'efectivo':0,'tbk':0,'total':0,'porcentaje':0} for d in range(1, num_dias+1)}
+        totales = {'efectivo':0,'tbk':0,'total':0,'porcentaje':0}
+        for r in resultados:
+            dia, ef, tbk = r[0], r[1] or 0, r[2] or 0
+            tt = ef + tbk
+            data_por_dia[dia] = {'efectivo':ef,'tbk':tbk,'total':tt,'porcentaje':round((ef/tt)*100) if tt>0 else 0}
+            totales['efectivo'] += ef; totales['tbk'] += tbk; totales['total'] += tt
+        if totales['total'] > 0: totales['porcentaje'] = round((totales['efectivo']/totales['total'])*100)
+        dias_en_periodo = [{'num':f'{d:02d}','name':['L','M','M','J','V','S','D'][date(int(anio),int(mes),d).weekday()]} for d in range(1, num_dias+1)]
         conn.close()
-
-        data_por_dia = {f'{d:02}': {'efectivo': 0, 'tbk': 0, 'total': 0, 'porcentaje': 0} for d in range(1, num_dias + 1)}
-        totales = {'efectivo': 0, 'tbk': 0, 'total': 0, 'porcentaje': 0}
-
-        for row in resultados:
-            dia, efectivo, tbk = row
-            if dia not in data_por_dia:
-                continue
-                
-            efectivo = efectivo or 0
-            tbk = tbk or 0
-            total = efectivo + tbk
-            
-            # Evitar dividir por cero cuando no se vende nada en el día
-            porcentaje = round((efectivo / total) * 100) if total > 0 else 0
-            
-            data_por_dia[dia] = {
-                'efectivo': efectivo,
-                'tbk': tbk,
-                'total': total,
-                'porcentaje': porcentaje
-            }
-            
-            totales['efectivo'] += efectivo
-            totales['tbk'] += tbk
-            totales['total'] += total
-
-        if totales['total'] > 0:
-            totales['porcentaje'] = round((totales['efectivo'] / totales['total']) * 100)
-
-        return render_template('admin_report_iva.html',
-                               modulo_name=modulo_name,
-                               mes_nombre=f'{mes_actual:02}/{anio_actual}',
-                               dias_en_periodo=dias_en_periodo,
-                               data_por_dia=data_por_dia,
-                               totales=totales)
+        return render_template('admin_report_iva.html', modulo_name=mod_name, modulo_id=modulo_id, mes_nombre=f"{mes}/{anio}", dias_en_periodo=dias_en_periodo, data_por_dia=data_por_dia, totales=totales, workers_list=workers_list, worker_actual=worker_id, dia_actual=dia_f, mes_actual=mes, anio_actual=anio, anios_disponibles=anios_list)

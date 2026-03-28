@@ -2,7 +2,8 @@ import re
 import random
 import string
 from functools import wraps
-from flask import session, redirect, url_for, flash
+from flask import session, redirect, url_for, flash, request
+from datetime import date
 
 def generate_random_password(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -54,3 +55,32 @@ def admin_required(f):
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
+
+def get_report_params():
+        """Captura filtros de la URL o establece valores por defecto."""
+        hoy = date.today()
+        anio = request.args.get('anio', str(hoy.year))
+        mes = request.args.get('mes', f"{hoy.month:02d}")
+        dia = request.args.get('dia')
+        worker_id = request.args.get('worker_id')
+        return anio, mes, dia, worker_id
+
+def get_common_report_data(c, modulo_id):
+    """Obtiene nombre del módulo y lista de trabajadores para los filtros."""
+    c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
+    modulo_info = c.fetchone()
+    
+    c.execute('''
+        SELECT DISTINCT w.id, w.name 
+        FROM workers w 
+        WHERE w.modulo_id = ? AND w.is_admin = 0
+        ORDER BY w.name
+    ''', (modulo_id,))
+    workers = c.fetchall()
+    
+    c.execute("SELECT DISTINCT strftime('%Y', fecha) as anio FROM rendiciones ORDER BY anio DESC")
+    anios = [row[0] for row in c.fetchall()]
+    if str(date.today().year) not in anios:
+        anios.insert(0, str(date.today().year))
+        
+    return modulo_info[0] if modulo_info else "Módulo", workers, anios
