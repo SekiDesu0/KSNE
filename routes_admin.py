@@ -1,5 +1,5 @@
 import sqlite3
-from flask import app, render_template, request, redirect, url_for, flash, session
+from flask import app, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash
 from datetime import date, datetime
 from database import get_db_connection
@@ -211,87 +211,165 @@ def register_admin_routes(app):
 
         if request.method == 'POST':
             name = request.form.get('name').strip()
-            zona_id = request.form.get('zona_id')
-            
-            raw_price = request.form.get('price').replace('.', '')
-            raw_commission = request.form.get('commission').replace('.', '')
-
-            if not zona_id:
-                flash("Debes seleccionar una Zona.", "danger")
-            else:
-                try:
-                    price = int(raw_price)
-                    commission = int(raw_commission)
-                    
-                    c.execute("INSERT INTO productos (zona_id, name, price, commission) VALUES (?, ?, ?, ?)", 
-                              (zona_id, name, price, commission))
-                    conn.commit()
-                    flash("Producto guardado exitosamente.", "success")
-                except ValueError:
-                    flash("El precio y la comisión deben ser números enteros válidos.", "danger")
-            
-            return redirect(url_for('manage_products'))
-
-        c.execute("SELECT id, name FROM zonas ORDER BY name")
-        zonas = c.fetchall()
-
-        c.execute('''SELECT p.id, p.name, p.price, p.commission, z.name, p.zona_id 
-                     FROM productos p
-                     JOIN zonas z ON p.zona_id = z.id
-                     ORDER BY z.name, p.name''')
-        productos = c.fetchall()
-        
-        conn.close()
-        return render_template('admin_productos.html', zonas=zonas, productos=productos)
-
-    @app.route('/admin/productos/edit/<int:id>', methods=['GET', 'POST'])
-    @admin_required
-    def edit_product(id):
-        conn = get_db_connection()
-        c = conn.cursor()
-
-        if request.method == 'POST':
-            name = request.form.get('name').strip()
-            zona_id = request.form.get('zona_id')
-            
-            raw_price = request.form.get('price').replace('.', '')
-            raw_commission = request.form.get('commission').replace('.', '')
-
             try:
-                price = int(raw_price)
-                commission = int(raw_commission)
+                # 1. Crear producto maestro
+                c.execute("INSERT INTO productos (name) VALUES (?)", (name,))
+                prod_id = c.lastrowid
                 
-                c.execute("UPDATE productos SET zona_id=?, name=?, price=?, commission=? WHERE id=?",
-                          (zona_id, name, price, commission, id))
+                # 2. Inicializar precios en 0 para todas las zonas activas
+                c.execute("SELECT id FROM zonas")
+                zonas = c.fetchall()
+                for zona in zonas:
+                    c.execute('''INSERT INTO precios_historicos 
+                                 (producto_id, zona_id, price, commission, is_active) 
+                                 VALUES (?, ?, 0, 0, 1)''', (prod_id, zona[0]))
+                
                 conn.commit()
-                flash("Producto actualizado exitosamente.", "success")
-                conn.close()
-                return redirect(url_for('manage_products'))
-            except ValueError:
-                flash("El precio y la comisión deben ser números enteros válidos.", "danger")
+                flash("Producto maestro creado. No olvides configurar sus precios.", "success")
+            except sqlite3.IntegrityError:
+                flash("Ese producto ya existe en el catálogo.", "danger")
+            
+            return redirect(url_for('manage_products'))
 
         c.execute("SELECT id, name FROM zonas ORDER BY name")
         zonas = c.fetchall()
 
-        c.execute("SELECT id, zona_id, name, price, commission FROM productos WHERE id=?", (id,))
-        producto = c.fetchone()
+        # Obtener productos y el precio VIGENTE por zona usando una subquery
+        c.execute('''
+            SELECT p.id, p.name, 
+                   z.id as zona_id, z.name as zona_name, 
+                   ph.price, ph.commission
+            FROM productos p
+            CROSS JOIN zonas z
+            LEFT JOIN precios_historicos ph 
+              ON p.id = ph.producto_id AND z.id = ph.zona_id 
+              AND ph.fecha_activacion = (
+                  SELECT MAX(fecha_activacion) 
+                  FROM precios_historicos 
+                  WHERE producto_id = p.id AND zona_id = z.id 
+                  AND fecha_activacion <= datetime('now', 'localtime')
+              )
+            ORDER BY p.name, z.name
+        ''')
+        
+        # Agrupar datos para la vista: {prod_id: {'name': 'Lentes', 'precios': {zona_id: {'price': X, 'comm': Y}}}}
+        raw_data = c.fetchall()
+        productos_dict = {}
+        for row in raw_data:
+            p_id, p_name, z_id, z_name, price, comm = row
+            if p_id not in productos_dict:
+                # Añadimos la lista 'futuros'
+                productos_dict[p_id] = {'id': p_id, 'name': p_name, 'precios': {}, 'futuros': []}
+            productos_dict[p_id]['precios'][z_id] = {
+                'zona_name': z_name,
+                'price': price or 0, 
+                'commission': comm or 0
+            }
+
+        # BÚSQUEDA DE PRECIOS PROGRAMADOS (Futuro)
+        c.execute('''
+            SELECT ph.id, ph.producto_id, z.name, ph.price, ph.commission, ph.fecha_activacion
+            FROM precios_historicos ph
+            JOIN zonas z ON ph.zona_id = z.id
+            WHERE ph.fecha_activacion > datetime('now', 'localtime')
+            ORDER BY ph.fecha_activacion ASC
+        ''')
+        future_data = c.fetchall()
+        
+        for row in future_data:
+            ph_id, p_id, z_name, price, comm, fecha = row
+            if p_id in productos_dict:
+                productos_dict[p_id]['futuros'].append({
+                    'id': ph_id,
+                    'zona_name': z_name,
+                    'price': price,
+                    'commission': comm,
+                    'fecha': fecha
+                })
+            
         conn.close()
+        return render_template('admin_productos.html', zonas=zonas, productos=productos_dict.values())
 
-        if not producto:
-            return redirect(url_for('manage_products'))
-
-        return render_template('edit_producto.html', zonas=zonas, producto=producto)
+    from datetime import datetime
 
     @app.route('/admin/productos/delete/<int:id>', methods=['POST'])
     @admin_required
     def delete_product(id):
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute("DELETE FROM productos WHERE id=?", (id,))
+        try:
+            # Borrar historial de precios primero
+            c.execute("DELETE FROM precios_historicos WHERE producto_id=?", (id,))
+            # Borrar producto maestro
+            c.execute("DELETE FROM productos WHERE id=?", (id,))
+            conn.commit()
+            flash("Producto maestro y su historial eliminados.", "info")
+        except sqlite3.IntegrityError:
+            # Si hay ventas asociadas en rendicion_items, SQLite bloqueará el borrado
+            flash("No puedes eliminar este producto porque ya tiene ventas registradas. Cámbiale el precio a 0 en su lugar.", "danger")
+        finally:
+            conn.close()
+        return redirect(url_for('manage_products'))
+
+    @app.route('/admin/productos/precios/<int:id>', methods=['POST'])
+    @admin_required
+    def update_product_prices(id):
+        conn = get_db_connection()
+        c = conn.cursor()
+        
+        c.execute("SELECT id FROM zonas")
+        zonas = c.fetchall()
+        
+        # Obtener fecha programada o usar la actual
+        fecha_input = request.form.get('fecha_activacion')
+        if fecha_input:
+            fecha_activacion = fecha_input.replace('T', ' ') + ':00'
+        else:
+            fecha_activacion = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        for zona in zonas:
+            z_id = str(zona[0])
+            new_price = int(request.form.get(f'price_{z_id}', '0').replace('.', ''))
+            new_comm = int(request.form.get(f'comm_{z_id}', '0').replace('.', ''))
+            
+            c.execute('''INSERT INTO precios_historicos 
+                         (producto_id, zona_id, price, commission, fecha_activacion) 
+                         VALUES (?, ?, ?, ?, ?)''', (id, z_id, new_price, new_comm, fecha_activacion))
+                
         conn.commit()
         conn.close()
-        flash("Producto eliminado.", "info")
+        flash(f"Precios actualizados. Entrarán en vigencia el {fecha_activacion}.", "success")
         return redirect(url_for('manage_products'))
+    
+    @app.route('/admin/productos/precios/cancelar/<int:id>', methods=['POST'])
+    @admin_required
+    def cancel_scheduled_price(id):
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM precios_historicos WHERE id = ?", (id,))
+        conn.commit()
+        conn.close()
+        flash("Cambio de precio programado cancelado.", "info")
+        return redirect(url_for('manage_products'))
+    
+    @app.route('/admin/api/productos/<int:id>/historial')
+    @admin_required
+    def api_product_history(id):
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute('''
+            SELECT z.name, ph.price, ph.fecha_activacion 
+            FROM precios_historicos ph
+            JOIN zonas z ON ph.zona_id = z.id
+            WHERE ph.producto_id = ?
+            ORDER BY ph.fecha_activacion ASC
+        ''', (id,)) # <-- Añade la coma para que sea una tupla
+        rows = c.fetchall()
+        conn.close()
+
+        # Convertimos la data a una lista de diccionarios que JS entienda felizmente
+        history = [{'zona': r[0], 'price': r[1], 'fecha': r[2]} for r in rows]
+        return jsonify(history)
 
     @app.route('/admin/rendiciones')
     @admin_required

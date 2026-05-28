@@ -133,7 +133,14 @@ def register_worker_routes(app):
                     prod_id = int(key.split('_')[1])
                     cantidad = int(value)
                     
-                    c.execute("SELECT price, commission FROM productos WHERE id = ?", (prod_id,))
+                    # Buscar el precio vigente al momento de la venta
+                    c.execute('''
+                        SELECT price, commission 
+                        FROM precios_historicos 
+                        WHERE producto_id = ? AND zona_id = ? 
+                        AND fecha_activacion <= datetime('now', 'localtime')
+                        ORDER BY fecha_activacion DESC LIMIT 1
+                    ''', (prod_id, zona_id))
                     prod_data = c.fetchone()
                     
                     if prod_data:
@@ -153,7 +160,20 @@ def register_worker_routes(app):
                 ''', (session['user_id'], modulo_id))
         otros_trabajadores = c.fetchall()
         
-        c.execute("SELECT id, name, price, commission FROM productos WHERE zona_id = ? ORDER BY name", (zona_id,))
+        # Buscar solo el precio vigente actual para esta zona
+        c.execute('''
+            SELECT p.id, p.name, ph.price, ph.commission 
+            FROM productos p 
+            JOIN precios_historicos ph ON p.id = ph.producto_id 
+            WHERE ph.zona_id = ? 
+              AND ph.fecha_activacion = (
+                  SELECT MAX(fecha_activacion) 
+                  FROM precios_historicos 
+                  WHERE producto_id = p.id AND zona_id = ? 
+                  AND fecha_activacion <= datetime('now', 'localtime')
+              )
+            ORDER BY p.name
+        ''', (zona_id, zona_id)) # Nota: zona_id se pasa dos veces
         productos = c.fetchall()
         conn.close()
 

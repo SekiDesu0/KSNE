@@ -215,7 +215,7 @@
                                     <dd class="col-sm-7">{{ rendicion[2] }}
                                         {% if session.get('is_admin') %}
                                         <span class="badge {% if rendicion[14] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
-                                            {% if rendicion[14] %}$ Sí{% else %}$ No{% endif %}
+                                            {% if rendicion[14] %}$ Si Recibe Comision{% else %}$ No Recibe Comision{% endif %}
                                         </span>
                                         {% endif %}
                                     </dd>
@@ -226,7 +226,7 @@
                                             {{ rendicion[10] }}
                                             {% if session.get('is_admin') %}
                                             <span class="badge {% if rendicion[15] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
-                                                {% if rendicion[15] %}$ Sí{% else %}$ No{% endif %}
+                                                {% if rendicion[15] %}$ Si Recibe Comision{% else %}$ No Recibe Comision{% endif %}
                                             </span>
                                             {% endif %}
                                         {% else %}

@@ -71,10 +71,20 @@ def populateDefaults():
         ]
         c.execute("SELECT id FROM zonas")
         zonas_ids = [row[0] for row in c.fetchall()]
-        for zona_id in zonas_ids:
-            for name, price, commission in productos_base:
-                c.execute("INSERT INTO productos (zona_id, name, price, commission) VALUES (?, ?, ?, ?)", 
-                        (zona_id, name, price, commission))
+        
+        # Fecha de activación artificial en el pasado para que las ventas históricas funcionen
+        fecha_base_precios = (datetime.date.today() - datetime.timedelta(days=365*3)).strftime('%Y-%m-%d 00:00:00')
+
+        for name, price, commission in productos_base:
+            c.execute("INSERT OR IGNORE INTO productos (name) VALUES (?)", (name,))
+            c.execute("SELECT id FROM productos WHERE name = ?", (name,))
+            p_id = c.fetchone()[0]
+            
+            for zona_id in zonas_ids:
+                c.execute('''INSERT INTO precios_historicos 
+                          (producto_id, zona_id, price, commission, fecha_activacion) 
+                          VALUES (?, ?, ?, ?, ?)''', 
+                          (p_id, zona_id, price, commission, fecha_base_precios))
         conn.commit()
 
     c.execute("SELECT COUNT(*) FROM workers WHERE is_admin = 0")
@@ -165,7 +175,19 @@ def populateDefaults():
                 
                 rend_id = c.lastrowid
 
-                c.execute("SELECT id, price, commission FROM productos WHERE zona_id = (SELECT zona_id FROM modulos WHERE id = ?)", (m_id,))
+                # Buscar el precio activo en el momento exacto de la venta histórica
+                c.execute('''
+                    SELECT p.id, ph.price, ph.commission 
+                    FROM productos p 
+                    JOIN precios_historicos ph ON p.id = ph.producto_id 
+                    WHERE ph.zona_id = (SELECT zona_id FROM modulos WHERE id = ?) 
+                      AND ph.fecha_activacion = (
+                          SELECT MAX(fecha_activacion) 
+                          FROM precios_historicos 
+                          WHERE producto_id = p.id AND zona_id = ph.zona_id 
+                          AND fecha_activacion <= ?
+                      )
+                ''', (m_id, fecha_str + ' 23:59:59'))
                 prods_zona = c.fetchall()
                 
                 if prods_zona:
@@ -182,7 +204,7 @@ def populateDefaults():
         conn.commit()
     
     conn.close()
-
+    
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
@@ -194,12 +216,20 @@ def init_db():
                   zona_id INTEGER NOT NULL,
                   name TEXT NOT NULL,
                   FOREIGN KEY (zona_id) REFERENCES zonas(id))''')
+    # 1. Catálogo Maestro (Solo el nombre)
     c.execute('''CREATE TABLE IF NOT EXISTS productos
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT UNIQUE NOT NULL)''')
+
+    # 2. Historial de Precios por Zona
+    c.execute('''CREATE TABLE IF NOT EXISTS precios_historicos
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  producto_id INTEGER NOT NULL,
                   zona_id INTEGER NOT NULL,
-                  name TEXT NOT NULL,
-                  price REAL NOT NULL,
-                  commission REAL NOT NULL,
+                  price INTEGER NOT NULL,
+                  commission INTEGER NOT NULL,
+                  fecha_activacion DATETIME NOT NULL,
+                  FOREIGN KEY (producto_id) REFERENCES productos(id),
                   FOREIGN KEY (zona_id) REFERENCES zonas(id))''')
     c.execute('''CREATE TABLE IF NOT EXISTS workers
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -214,6 +214,10 @@
         </div>
     </div>
 
+    <div id="discrepancy_warning" class="alert alert-warning mb-4" style="display: none;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="discrepancy_text"></span>
+    </div>
+
     <button type="button" class="btn btn-primary w-100 py-3 mb-5" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
         <i class="bi bi-send-check me-2"></i> Enviar Rendición Diaria
     </button>
@@ -277,6 +281,8 @@
             }
         });
         displayTotalProductos.value = granTotal.toLocaleString('es-CL');
+
+        checkWarnings();
     }
 
     inputsCantidad.forEach(input => {
@@ -292,6 +298,41 @@
             calcularVentaProductos();
         });
     });
+
+    function checkWarnings() {
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            if (!el || !el.value.trim() || el.value === '0') return 0; 
+            return parseInt(el.value.replace(/\D/g, '')) || 0;
+        };
+
+        const totalProductos = getVal('total_productos_calc');
+        const totalDeclarado = getVal('total_general');
+        const gastos = getVal('gastos');
+        const efectivo = getVal('venta_efectivo');
+
+        let warnings = [];
+
+        // Comprobar diferencias en totales (solo si se ha ingresado algo para no mostrar el error de entrada)
+        if ((totalProductos > 0 || totalDeclarado > 0) && totalProductos !== totalDeclarado) {
+            warnings.push("El <strong>Total Venta por Productos</strong> no coincide con el <strong>Total Ventas Declaradas</strong>.");
+        }
+
+        // Comprobar si los gastos superan el efectivo
+        if (gastos > efectivo) {
+            warnings.push("El <strong>Monto de Gastos</strong> es mayor que el <strong>Efectivo</strong> declarado.");
+        }
+
+        const warningContainer = document.getElementById('discrepancy_warning');
+        const warningText = document.getElementById('discrepancy_text');
+
+        if (warnings.length > 0) {
+            warningText.innerHTML = warnings.join("<br>");
+            warningContainer.style.display = 'block';
+        } else {
+            warningContainer.style.display = 'none';
+        }
+    }
 </script>
 
 <script>
@@ -361,6 +402,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('total_digital').value = totalDigital.toLocaleString('es-CL');
         document.getElementById('total_general').value = totalGeneral.toLocaleString('es-CL');
+
+        checkWarnings();
     }
 
     inputsVenta.forEach(input => {

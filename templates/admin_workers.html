@@ -59,6 +59,34 @@
     </div>
 </div>
 
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-body bg-body-tertiary rounded">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchWorker" placeholder="Buscar por Nombre o RUT...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="filterModule">
+                    <option value="all">Todos los Módulos</option>
+                    {% for mod in modulos %}
+                        <option value="{{ mod[0] }}">{{ mod[2] }} - {{ mod[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterType">
+                    <option value="all">Todas las Jornadas</option>
+                    <option value="Full Time">Full Time</option>
+                    <option value="Part Time">Part Time</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow-sm">
     <div class="card-body p-0">
         <table class="table table-striped table-hover mb-0">
@@ -74,7 +102,7 @@
             </thead>
             <tbody>
                 {% for worker in workers %}
-                <tr>
+                <tr class="worker-row" data-modulo="{{ worker[5] }}" data-tipo="{{ worker[6] }}">
                     <td class="align-middle">{{ worker[1] }}</td>
                     <td class="align-middle">{{ worker[2] }}</td>
                     <td class="align-middle">{{ worker[3] }}</td>
@@ -207,5 +235,40 @@
     document.querySelectorAll('.phone-input, #phoneInput').forEach(inp => {
         inp.addEventListener('input', () => formatPhone(inp));
     });
+
+
+    // --- LÓGICA DE FILTRADO DE TRABAJADORES ---
+    const searchInputWorker = document.getElementById('searchWorker');
+    const moduleSelectFilter = document.getElementById('filterModule');
+    const typeSelectFilter = document.getElementById('filterType');
+    const workerRows = document.querySelectorAll('.worker-row');
+
+    function filterWorkers() {
+        const searchTerm = searchInputWorker.value.toLowerCase();
+        const selectedModule = moduleSelectFilter.value;
+        const selectedType = typeSelectFilter.value;
+
+        workerRows.forEach(row => {
+            // Asumiendo que celda 0 es RUT y celda 1 es Nombre
+            const rut = row.cells[0].textContent.toLowerCase();
+            const name = row.cells[1].textContent.toLowerCase();
+            const rowModule = row.getAttribute('data-modulo');
+            const rowType = row.getAttribute('data-tipo');
+
+            const matchesSearch = rut.includes(searchTerm) || name.includes(searchTerm);
+            const matchesModule = selectedModule === 'all' || rowModule === selectedModule;
+            const matchesType = selectedType === 'all' || rowType === selectedType;
+
+            if (matchesSearch && matchesModule && matchesType) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    searchInputWorker.addEventListener('input', filterWorkers);
+    moduleSelectFilter.addEventListener('change', filterWorkers);
+    typeSelectFilter.addEventListener('change', filterWorkers);
 </script>
 {% endblock %}
