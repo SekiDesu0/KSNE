@@ -49,6 +49,45 @@ def generar_historico_definitivo(dias_atras=180):
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', workers_data)
     conn.commit()
 
+    # 2.5 GENERACIÓN DE HISTORIAL DE PRECIOS MOCK
+    print("Generando fluctuaciones de precios históricas de prueba...")
+    c.execute("SELECT id FROM productos")
+    prod_ids = [row[0] for row in c.fetchall()]
+    c.execute("SELECT id FROM zonas")
+    zona_ids = [row[0] for row in c.fetchall()]
+
+    precios_historicos_extra = []
+    hoy = date.today()
+    
+    for p_id in prod_ids:
+        for z_id in zona_ids:
+            c.execute("SELECT price, commission FROM precios_historicos WHERE producto_id = ? AND zona_id = ? ORDER BY fecha_activacion ASC LIMIT 1", (p_id, z_id))
+            base_row = c.fetchone()
+            if not base_row:
+                continue
+            base_price, base_comm = base_row
+            
+            # Create 3 historical price changes in the last 180 days
+            intervalos = [140, 80, 30]
+            current_price = base_price
+            current_comm = base_comm
+            for dias in intervalos:
+                if random.random() < 0.70:
+                    change_percent = random.choice([-0.15, -0.10, 0.05, 0.10, 0.15, 0.20])
+                    current_price = int(current_price * (1 + change_percent))
+                    current_price = max(1000, (current_price // 100) * 100)
+                    
+                    comm_change = random.choice([-50, 0, 50, 100])
+                    current_comm = max(100, current_comm + comm_change)
+                    
+                    fecha_cambio = (hoy - timedelta(days=dias)).strftime('%Y-%m-%d 00:00:00')
+                    precios_historicos_extra.append((p_id, z_id, current_price, current_comm, fecha_cambio))
+
+    c.executemany('''INSERT INTO precios_historicos 
+                     (producto_id, zona_id, price, commission, fecha_activacion)
+                     VALUES (?, ?, ?, ?, ?)''', precios_historicos_extra)
+    conn.commit()
+
     # 3. PREPARACIÓN DE DATOS
     c.execute("SELECT id, modulo_id, tipo FROM workers WHERE is_admin = 0")
     all_workers_data = c.fetchall()
