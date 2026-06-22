@@ -100,3 +100,24 @@ class RendicionItem(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     precio_historico = db.Column(db.Integer, nullable=False)
     comision_historica = db.Column(db.Integer, nullable=False)
+
+
+class Complemento(db.Model):
+    __tablename__ = 'complementos'
+    __table_args__ = _TABLE_ARGS
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, unique=True, nullable=False)
+
+
+class ProductoComplemento(db.Model):
+    __tablename__ = 'producto_complementos'
+    __table_args__ = _TABLE_ARGS
+
+    id = db.Column(db.Integer, primary_key=True)
+    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id', ondelete='CASCADE'), nullable=False)
+    complemento_id = db.Column(db.Integer, db.ForeignKey('complementos.id', ondelete='CASCADE'), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False, default=1)
+
+    producto = db.relationship('Producto', backref=db.backref('complementos_assoc', lazy=True, cascade="all, delete-orphan"))
+    complemento = db.relationship('Complemento', backref=db.backref('productos_assoc', lazy=True))

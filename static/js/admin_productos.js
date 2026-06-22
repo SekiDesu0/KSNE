@@ -39,4 +39,17 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
+
+    window.toggleNuevoComplementoInput = function(prodId, selectEl) {
+        const wrapper = document.getElementById(`nuevo_comp_wrapper_${prodId}`);
+        if (wrapper) {
+            if (selectEl.value === '__nuevo__') {
+                wrapper.style.display = 'block';
+                wrapper.querySelector('input').setAttribute('required', 'required');
+            } else {
+                wrapper.style.display = 'none';
+                wrapper.querySelector('input').removeAttribute('required');
+            }
+        }
+    };
 });

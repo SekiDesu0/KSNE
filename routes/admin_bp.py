@@ -6,7 +6,7 @@ from datetime import date, datetime
 
 from models.models import (
     db, Zona, Modulo, Producto, PrecioHistorico,
-    Worker, Rendicion, RendicionItem,
+    Worker, Rendicion, RendicionItem, Complemento, ProductoComplemento,
 )
 from utils import (
     admin_required, validate_rut, format_rut, validate_phone,
@@ -336,7 +336,13 @@ def manage_products():
     productos = Producto.query.order_by(Producto.name).all()
     productos_dict = {}
     for p in productos:
-        productos_dict[p.id] = {'id': p.id, 'name': p.name, 'precios': {}, 'futuros': []}
+        productos_dict[p.id] = {
+            'id': p.id,
+            'name': p.name,
+            'precios': {},
+            'futuros': [],
+            'complementos': []
+        }
         for z in zonas:
             z_id, z_name = z
             price, comm = price_map.get((p.id, z_id), (None, None))
@@ -364,7 +370,23 @@ def manage_products():
                 'fecha': ph.fecha_activacion,
             })
 
-    return render_template('admin_productos.html', zonas=zonas, productos=productos_dict.values())
+    # Fetch associated complementos
+    assoc_rows = (
+        db.session.query(ProductoComplemento.id, ProductoComplemento.producto_id, ProductoComplemento.cantidad, Complemento.name)
+        .join(Complemento, ProductoComplemento.complemento_id == Complemento.id)
+        .all()
+    )
+    for assoc_id, prod_id, cantidad, comp_name in assoc_rows:
+        if prod_id in productos_dict:
+            productos_dict[prod_id]['complementos'].append({
+                'id': assoc_id,
+                'name': comp_name,
+                'cantidad': cantidad
+            })
+
+    complementos_catalogo = Complemento.query.order_by(Complemento.name).all()
+
+    return render_template('admin_productos.html', zonas=zonas, productos=productos_dict.values(), complementos_catalogo=complementos_catalogo)
 
 
 @admin_bp.route('/productos/delete/<int:id>', methods=['POST'])
@@ -380,6 +402,53 @@ def delete_product(id):
     except IntegrityError:
         db.session.rollback()
         flash("No puedes eliminar este producto porque ya tiene ventas registradas. Cámbiale el precio a 0 en su lugar.", "danger")
+    return redirect(url_for('admin.manage_products'))
+
+
+@admin_bp.route('/productos/<int:prod_id>/complementos/add', methods=['POST'])
+@admin_required
+def add_producto_complemento(prod_id):
+    comp_id = request.form.get('complemento_id')
+    comp_name_nuevo = request.form.get('complemento_nombre_nuevo', '').strip()
+    cantidad = int(request.form.get('cantidad', 1) or 1)
+
+    if comp_id == '__nuevo__':
+        if not comp_name_nuevo:
+            flash("Debes ingresar el nombre del nuevo complemento.", "danger")
+            return redirect(url_for('admin.manage_products'))
+        
+        comp = Complemento.query.filter_by(name=comp_name_nuevo).first()
+        if not comp:
+            comp = Complemento(name=comp_name_nuevo)
+            db.session.add(comp)
+            db.session.flush()
+    else:
+        comp = db.session.get(Complemento, int(comp_id))
+
+    if not comp:
+        flash("Complemento no encontrado.", "danger")
+        return redirect(url_for('admin.manage_products'))
+
+    assoc = ProductoComplemento.query.filter_by(producto_id=prod_id, complemento_id=comp.id).first()
+    if assoc:
+        assoc.cantidad += cantidad
+    else:
+        assoc = ProductoComplemento(producto_id=prod_id, complemento_id=comp.id, cantidad=cantidad)
+        db.session.add(assoc)
+
+    db.session.commit()
+    flash("Complemento vinculado al producto exitosamente.", "success")
+    return redirect(url_for('admin.manage_products'))
+
+
+@admin_bp.route('/productos/complementos/delete/<int:assoc_id>', methods=['POST'])
+@admin_required
+def delete_producto_complemento(assoc_id):
+    assoc = db.session.get(ProductoComplemento, assoc_id)
+    if assoc:
+        db.session.delete(assoc)
+        db.session.commit()
+        flash("Complemento desvinculado del producto.", "info")
     return redirect(url_for('admin.manage_products'))
 
 

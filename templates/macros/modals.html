@@ -800,3 +800,84 @@
     </div>
 </div>
 {% endmacro %}
+
+
+{% macro manage_complementos_modal(prod, complementos_catalogo) %}
+<div class="modal fade" id="complementosModal{{ prod.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complementos de: <span class="text-primary">{{ prod.name }}</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <h6 class="fw-bold mb-3">Complementos Vinculados (Se entregan de regalo al vender este producto)</h6>
+                {% if prod.complementos %}
+                <div class="table-responsive mb-4">
+                    <table class="table table-striped table-hover table-bordered mb-0 align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nombre Complemento</th>
+                                <th class="text-center" style="width: 120px;">Cantidad</th>
+                                <th class="text-end" style="width: 100px;">Desvincular</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comp in prod.complementos %}
+                            <tr>
+                                <td>{{ comp.name }}</td>
+                                <td class="text-center fw-bold">{{ comp.cantidad }}</td>
+                                <td class="text-end">
+                                    <form method="POST" action="{{ url_for('admin.delete_producto_complemento', assoc_id=comp.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-danger btn-sm py-0 px-2" title="Desvincular">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-light border text-center text-muted mb-4 py-3">
+                    <i class="bi bi-info-circle me-1"></i> Este producto aún no tiene complementos asociados.
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <h6 class="fw-bold mb-3">Vincular Nuevo Complemento</h6>
+                <form method="POST" action="{{ url_for('admin.add_producto_complemento', prod_id=prod.id) }}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small text-muted mb-1">Seleccionar del Catálogo</label>
+                            <select class="form-select form-select-sm" name="complemento_id" onchange="toggleNuevoComplementoInput({{ prod.id }}, this)" required>
+                                <option value="" selected disabled>Elegir...</option>
+                                {% for cat in complementos_catalogo %}
+                                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                                <option value="__nuevo__">+ Crear nuevo complemento...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5" id="nuevo_comp_wrapper_{{ prod.id }}" style="display:none;">
+                            <label class="form-label small text-muted mb-1">Nombre del Nuevo Complemento</label>
+                            <input type="text" class="form-control form-control-sm" name="complemento_nombre_nuevo" placeholder="Ej. Paño microfibra">
+                        </div>
+                        <div class="col-md-2" id="cantidad_comp_wrapper_{{ prod.id }}">
+                            <label class="form-label small text-muted mb-1">Cantidad</label>
+                            <input type="number" class="form-control form-control-sm text-center" name="cantidad" value="1" min="1" required>
+                        </div>
+                        <div class="col-md-12 text-end mt-2">
+                            <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> Vincular</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

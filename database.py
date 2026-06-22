@@ -279,6 +279,19 @@ def init_db():
                   FOREIGN KEY (rendicion_id) REFERENCES rendiciones(id),
                   FOREIGN KEY (producto_id) REFERENCES productos(id))''')
     
+    # Complementos tables
+    c.execute('''CREATE TABLE IF NOT EXISTS complementos
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT UNIQUE NOT NULL)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS producto_complementos
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  producto_id INTEGER NOT NULL,
+                  complemento_id INTEGER NOT NULL,
+                  cantidad INTEGER NOT NULL DEFAULT 1,
+                  FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+                  FOREIGN KEY (complemento_id) REFERENCES complementos(id) ON DELETE CASCADE,
+                  UNIQUE(producto_id, complemento_id))''')
+    
     # Migrate: add bank fields if missing
     for col in ['nombre_banco', 'numero_cuenta', 'tipo_cuenta', 'rut_banco']:
         try:
