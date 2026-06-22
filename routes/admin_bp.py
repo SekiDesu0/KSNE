@@ -462,10 +462,43 @@ def update_product_prices(id):
     else:
         fecha_activacion = datetime.now()
 
+    # Query currently active prices for comparison
+    now = datetime.now()
+    subq = (
+        db.session.query(
+            PrecioHistorico.zona_id.label('zona_id'),
+            func.max(PrecioHistorico.fecha_activacion).label('max_fecha')
+        )
+        .filter(PrecioHistorico.producto_id == id, PrecioHistorico.fecha_activacion <= now)
+        .group_by(PrecioHistorico.zona_id)
+        .subquery()
+    )
+    active_prices_rows = (
+        db.session.query(PrecioHistorico)
+        .join(
+            subq,
+            and_(
+                PrecioHistorico.zona_id == subq.c.zona_id,
+                PrecioHistorico.fecha_activacion == subq.c.max_fecha
+            )
+        )
+        .filter(PrecioHistorico.producto_id == id)
+        .all()
+    )
+    active_prices = {ap.zona_id: (ap.price, ap.commission) for ap in active_prices_rows}
+
+    inserted_count = 0
     for zona in Zona.query.all():
         z_id = str(zona.id)
         new_price = int(request.form.get(f'price_{z_id}', '0').replace('.', ''))
         new_comm = int(request.form.get(f'comm_{z_id}', '0').replace('.', ''))
+
+        # Fetch current active values
+        old_price, old_comm = active_prices.get(zona.id, (None, None))
+
+        # Skip scheduled updates if the values didn't change
+        if fecha_date and new_price == old_price and new_comm == old_comm:
+            continue
 
         db.session.add(PrecioHistorico(
             producto_id=id,
@@ -474,9 +507,14 @@ def update_product_prices(id):
             commission=new_comm,
             fecha_activacion=fecha_activacion,
         ))
+        inserted_count += 1
 
-    db.session.commit()
-    flash(f"Precios actualizados. Entrarán en vigencia el {fecha_activacion}.", "success")
+    if inserted_count > 0:
+        db.session.commit()
+        flash(f"Precios actualizados. Entrarán en vigencia el {fecha_activacion}.", "success")
+    else:
+        flash("No se detectaron cambios en los precios para programar.", "info")
+
     return redirect(url_for('admin.manage_products'))
 
 
