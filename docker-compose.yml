@@ -17,7 +17,7 @@ services:
       - /home/shironeko/Documents/dockerVols/rendiciones/static/cache:/app/static/cache
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:5000/login"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:5000/"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -1,66 +1,56 @@
 # KSNE-Rendiciones-App
 
-## 🐳 Docker Deployment (Server)
+## Docker Deployment
 
-Build and run the central inventory server:
+Build and deploy the application:
 
 ```bash
-# Build the image
-docker build -t rendiciones:latest .
+./build-deploy.sh    # pulls latest code, builds image, starts container
 
-# Run the container (Map port 5000 and persist the database/cache)
-docker run -d \
-  -p 5000:5000 \
-  -v $(pwd)/rendiciones/db:/app/db \
-  -v $(pwd)/rendiciones/static/cache:/app/static/cache \
-  --name rendiciones-server \
-  --restart unless-stopped \
-  rendiciones:latest
+# Or step by step:
+docker compose up -d --build
 ```
 
-Or use this stack:
-```yml
-name: rendiciones
-services:
-    rendiciones:
-        ports:
-            - 5000:5000
-        volumes:
-            - YOUR_PATH/rendiciones/db:/app/db
-            - YOUR_PATH/rendiciones/static/cache:/app/static/cache
-        container_name: rendiciones-server
-        image: rendiciones:latest
-        restart: unless-stopped
-```
-# TODO preguntas:
-- ver si tienen como turnos fijos para setear un horario
-- ver si trabajan mas de 2 personas maximo al dia
-- ver como funcionan los productos / precios de HC
+The app will be available at `http://localhost:5500`.
 
-# TODO general:
-- generar regitro centros comerciales
-- generar reportes y exportar a excel
-- tabla de productos vendidos durante el mes
-- formulario de cosas robadas
-- implementar horas extra?
-- implemetar calendario como el excel
-- arrglar colores en modo claro y oscuro
-- separar productos para tiendas
-- limpiar requirements.txt
-- mostrar total de ventas con graficos en el index(?)
-- mostrar ventas diarias por modulo y zona(?)
-- formulario de perdidas en el dashboard(?) o hub
-- categorias de productos (complementos, etc)
-- precio de productos por zona
-- hacer que contraseña autogenerada force a crear una nueva para el trabajador
+### Volumes
 
-# TODO no prioritario:
-- dejar mas bonito las cosas de admin en media ventana o otros formatos
+Persistent data is stored outside the container:
 
-# TODO peppermint:
-## formulario
-- cantidad de boletas por metodo de pago
-- permitir subir foto de total gastos (boleta/factura)
+| Host path | Container path | Purpose |
+|---|---|---|
+| `./db` | `/app/db` | SQLite database |
+| `./static/cache` | `/app/static/cache` | Cached files |
 
-# TODO happy candy:
-- comision 2%
+# TODO
+## Questions
+- [ ] Verify if shifts are fixed to set a schedule
+- [ ] Verify if max 2 people work per day
+- [ ] Understand how HC products/prices work
+
+## General
+- [ ] Generate shopping center registry
+- [ ] Generate reports and export to Excel
+- [ ] Monthly sold products table
+- [ ] Stolen items form
+- [ ] Implement overtime?
+- [ ] Implement calendar like Excel
+- [ ] Fix colors in light/dark mode
+- [ ] Separate products by store
+- [ ] Clean up requirements.txt
+- [ ] Show total sales charts on index
+- [ ] Show daily sales by module/zone
+- [ ] Loss report form on dashboard
+- [ ] Product categories (complementos, etc)
+- [ ] Product pricing by zone
+- [ ] Force password change on first login for workers
+
+## Low Priority
+- [ ] Polish admin UI layout
+
+## Peppermint
+- [ ] Receipt count by payment method
+- [ ] Allow uploading expense receipt photos
+
+## Happy Candy
+- [ ] 2% commission
