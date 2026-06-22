@@ -1,31 +1,21 @@
 {% extends "macros/base.html" %}
-{% from 'macros/modals.html' import confirm_modal, edit_product_modal %}
+{% from 'macros/modals.html' import confirm_modal, edit_product_modal, add_product_modal %}
 {% from "macros/ui.html" import flashed_messages %}
 
 {% block title %}Catálogo de Productos{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Catálogo de Productos por Zona</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Catálogo de Productos por Zona</h2>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+        <i class="bi bi-plus-lg"></i> Agregar Producto
+    </button>
+</div>
 
 {{ flashed_messages() }}
 
 {{ edit_product_modal(zonas) }}
-
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-primary text-white">Agregar Producto Maestro</div>
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('admin.manage_products') }}">
-            <div class="row g-3">
-                <div class="col-md-10">
-                    <input type="text" class="form-control" name="name" placeholder="Nombre del Producto" required>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Crear Producto</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
+{{ add_product_modal(zonas) }}
 
 <div class="input-group mb-3 shadow-sm">
     <span class="input-group-text bg-body-tertiary"><i class="bi bi-search"></i></span>

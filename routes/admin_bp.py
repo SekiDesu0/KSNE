@@ -281,16 +281,21 @@ def manage_products():
 
             now = datetime.now()
             for zona in Zona.query.all():
+                p_val = request.form.get(f'price_{zona.id}', '0')
+                c_val = request.form.get(f'comm_{zona.id}', '0')
+                price = int(str(p_val).replace('.', '').replace('$', '')) if p_val else 0
+                commission = int(str(c_val).replace('.', '').replace('$', '')) if c_val else 0
+
                 db.session.add(PrecioHistorico(
                     producto_id=new_producto.id,
                     zona_id=zona.id,
-                    price=0,
-                    commission=0,
+                    price=price,
+                    commission=commission,
                     fecha_activacion=now,
                 ))
 
             db.session.commit()
-            flash("Producto maestro creado. No olvides configurar sus precios.", "success")
+            flash("Producto maestro y sus precios creados exitosamente.", "success")
         except IntegrityError:
             db.session.rollback()
             flash("Ese producto ya existe en el catálogo.", "danger")

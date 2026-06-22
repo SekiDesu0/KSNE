@@ -82,6 +82,57 @@
 </div>
 {% endmacro %}
 
+{% macro add_product_modal(zonas) %}
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Nuevo Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.manage_products') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre del Producto</label>
+                        <input type="text" class="form-control" name="name" placeholder="Nombre del Producto" required>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3">Precios y Comisiones por Zona</h6>
+                    <div class="row fw-bold mb-2">
+                        <div class="col-4">Zona</div>
+                        <div class="col-4">Precio</div>
+                        <div class="col-4">Comisión</div>
+                    </div>
+                    {% for z in zonas %}
+                    <div class="row mb-2">
+                        <div class="col-4 d-flex align-items-center">
+                            <span class="badge bg-info text-dark w-100">{{ z[1] }}</span>
+                        </div>
+                        <div class="col-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control money-input" name="price_{{ z[0] }}" placeholder="0" required>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control money-input" name="comm_{{ z[0] }}" placeholder="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
 {% macro edit_worker_modal(modulos, bancos) %}
 <div class="modal fade" id="editWorkerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
