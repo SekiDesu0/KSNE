@@ -246,6 +246,7 @@ def init_db():
                 worker_id INTEGER NOT NULL,
                 worker_comision BOOLEAN DEFAULT 1,
                 companion_id INTEGER,
+                companion2_id INTEGER,
                 modulo_id INTEGER NOT NULL,
                 fecha DATE NOT NULL,
                 hora_entrada TEXT NOT NULL,
@@ -253,6 +254,7 @@ def init_db():
                 companion_hora_entrada TEXT,
                 companion_hora_salida TEXT,
                 companion_comision BOOLEAN DEFAULT 0,
+                companion2_comision BOOLEAN DEFAULT 0,
                 venta_debito INTEGER DEFAULT 0,
                 venta_credito INTEGER DEFAULT 0,
                 venta_mp INTEGER DEFAULT 0,
@@ -265,6 +267,7 @@ def init_db():
                 observaciones TEXT,
                 FOREIGN KEY (worker_id) REFERENCES workers(id),
                 FOREIGN KEY (companion_id) REFERENCES workers(id),
+                FOREIGN KEY (companion2_id) REFERENCES workers(id),
                 FOREIGN KEY (modulo_id) REFERENCES modulos(id))''')
     c.execute('''CREATE TABLE IF NOT EXISTS rendicion_items
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -282,6 +285,13 @@ def init_db():
             c.execute(f"ALTER TABLE workers ADD COLUMN {col} TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass  # column already exists
+
+    # Migrate: add companion2 columns
+    for col in ['companion2_id', 'companion2_comision']:
+        try:
+            c.execute(f"ALTER TABLE rendiciones ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
 
     c.execute("SELECT id FROM workers WHERE is_admin = 1")
     if not c.fetchone():

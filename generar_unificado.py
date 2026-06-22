@@ -122,13 +122,29 @@ def generar_historico_definitivo(dias_atras=180):
                 companion_id = None
                 comp_in, comp_out = None, None
                 companion_comision = 0
+                companion2_id = None
+                companion2_comision = 0
                 if random.random() < 0.70:
-                    posibles_comp = [w for w in todos_los_trabajadores if w != worker_id]
+                    posibles_comp = [w for w in workers_modulo if w != worker_id]
                     if posibles_comp:
                         companion_id = random.choice(posibles_comp)
                         comp_in, comp_out = hora_entrada, hora_salida
                         comp_tipo = workers_tipo.get(companion_id, "Part Time")
                         companion_comision = 1 if comp_tipo == "Full Time" else random.choice([0, 1])
+                        
+                        # Acompañante 2 (25% probability if companion 1 is present)
+                        if random.random() < 0.25:
+                            posibles_comp2 = [w for w in posibles_comp if w != companion_id]
+                            if posibles_comp2:
+                                companion2_id = random.choice(posibles_comp2)
+                                comp2_tipo = workers_tipo.get(companion2_id, "Part Time")
+                                companion2_comision = 1 if comp2_tipo == "Full Time" else random.choice([0, 1])
+                
+                # If there is no companion, comision should be disabled (0)
+                if companion_id is None:
+                    companion_comision = 0
+                if companion2_id is None:
+                    companion2_comision = 0
                 
                 num_prods = random.randint(1, 5)
                 prods_elegidos = random.sample(productos, min(num_prods, len(productos)))
@@ -171,16 +187,16 @@ def generar_historico_definitivo(dias_atras=180):
 
                 c.execute('''
                     INSERT INTO rendiciones 
-                    (worker_id, worker_comision, companion_id, modulo_id, fecha,
+                    (worker_id, worker_comision, companion_id, companion2_id, modulo_id, fecha,
                      hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                     companion_comision,
+                     companion_comision, companion2_comision,
                      venta_debito, venta_credito, venta_mp, venta_efectivo,
                      boletas_debito, boletas_credito, boletas_mp, boletas_efectivo,
                      gastos, observaciones)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (worker_id, worker_comision, companion_id, modulo_id, fecha_str,
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (worker_id, worker_comision, companion_id, companion2_id, modulo_id, fecha_str,
                       hora_entrada, hora_salida, comp_in, comp_out,
-                      companion_comision,
+                      companion_comision, companion2_comision,
                       debito, credito, mp, efectivo,
                       b_debito, b_credito, b_mp, b_efectivo,
                       gastos, tipo_registro))

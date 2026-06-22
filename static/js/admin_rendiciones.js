@@ -23,6 +23,13 @@ document.addEventListener("DOMContentLoaded", function () {
         window.updateComisionToggle(select, `cc_${id}`);
     };
 
+    window.toggleComp2Div = function (id, select) {
+        const compDiv = document.getElementById(`comp2_com_div_${id}`);
+        if (compDiv) compDiv.style.display = select.value ? 'flex' : 'none';
+        window.updateBadge(select, `badge_comp2_${id}`);
+        window.updateComisionToggle(select, `cc2_${id}`);
+    };
+
     window.updateComisionToggle = function (selectElement, toggleId) {
         const option = selectElement.options[selectElement.selectedIndex];
         const tipoJornada = option ? option.getAttribute('data-tipo') : null;
@@ -99,6 +106,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const compSelect = this.querySelector('select[name="companion_id"]');
             if (compSelect && compSelect.value) window.updateBadge(compSelect, `badge_comp_${rid}`);
+
+            const comp2Select = this.querySelector('select[name="companion2_id"]');
+            if (comp2Select && comp2Select.value) window.updateBadge(comp2Select, `badge_comp2_${rid}`);
         });
 
         modal.addEventListener('hidden.bs.modal', function () {

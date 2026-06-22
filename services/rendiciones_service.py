@@ -31,6 +31,7 @@ def get_filtered_rendiciones(fecha_inicio, fecha_fin, zona_id, modulo_id):
     fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
     Companion = aliased(Worker)
+    Companion2 = aliased(Worker)
 
     filters = [
         Rendicion.fecha >= inicio,
@@ -52,11 +53,14 @@ def get_filtered_rendiciones(fecha_inicio, fecha_fin, zona_id, modulo_id):
         Companion.name.label('companion_name'),
         Rendicion.worker_id, Rendicion.companion_id, Rendicion.modulo_id,
         Rendicion.worker_comision, Rendicion.companion_comision,
+        Companion2.name.label('companion2_name'),
+        Rendicion.companion2_id, Rendicion.companion2_comision,
         Rendicion.boletas_debito, Rendicion.boletas_credito,
         Rendicion.boletas_mp, Rendicion.boletas_efectivo,
     ).join(Worker, Rendicion.worker_id == Worker.id
     ).join(Modulo, Rendicion.modulo_id == Modulo.id
     ).outerjoin(Companion, Rendicion.companion_id == Companion.id
+    ).outerjoin(Companion2, Rendicion.companion2_id == Companion2.id
     ).filter(*filters
     ).order_by(Rendicion.fecha.desc(), Rendicion.id.desc()).all()
 

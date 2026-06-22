@@ -328,7 +328,7 @@
                                     <dd class="col-sm-7">{{ rendicion[2] }}
                                         {% if session.get('is_admin') %}
                                         <span class="badge {% if rendicion[14] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
-                                            {% if rendicion[14] %}$ Si Recibe Comision{% else %}$ No Recibe Comision{% endif %}
+                                            {% if rendicion[14] %}Si Recibe Comision{% else %}No Recibe Comision{% endif %}
                                         </span>
                                         {% endif %}
                                     </dd>
@@ -339,7 +339,21 @@
                                             {{ rendicion[10] }}
                                             {% if session.get('is_admin') %}
                                             <span class="badge {% if rendicion[15] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
-                                                {% if rendicion[15] %}$ Si Recibe Comision{% else %}$ No Recibe Comision{% endif %}
+                                                {% if rendicion[15] %}Si Recibe Comision{% else %}No Recibe Comision{% endif %}
+                                            </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted italic small">Sin acompañante</span>
+                                        {% endif %}
+                                    </dd>
+
+                                    <dt class="col-sm-5 text-muted">Acompañante 2</dt>
+                                    <dd class="col-sm-7">
+                                        {% if rendicion[16] %}
+                                            {{ rendicion[16] }}
+                                            {% if session.get('is_admin') %}
+                                            <span class="badge {% if rendicion[18] %}bg-success{% else %}bg-secondary{% endif %} ms-1" style="font-size: 0.65em;">
+                                                {% if rendicion[18] %}Si Recibe Comision{% else %}No Recibe Comision{% endif %}
                                             </span>
                                             {% endif %}
                                         {% else %}
@@ -352,19 +366,19 @@
                                 </dl>
                                 <hr>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Débito <small>(x{{ rendicion[16] }})</small>:</span>
+                                    <span class="text-muted">Débito <small>(x{{ rendicion[19] or 0 }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[4] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Crédito <small>(x{{ rendicion[17] }})</small>:</span>
+                                    <span class="text-muted">Crédito <small>(x{{ rendicion[20] or 0 }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[5] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Mercado Pago <small>(x{{ rendicion[18] }})</small>:</span>
+                                    <span class="text-muted">Mercado Pago <small>(x{{ rendicion[21] or 0 }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[6] or 0).replace(',', '.') }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Efectivo <small>(x{{ rendicion[19] }})</small>:</span>
+                                    <span class="text-muted">Efectivo <small>(x{{ rendicion[22] or 0 }})</small>:</span>
                                     <span>${{ "{:,.0f}".format(rendicion[7] or 0).replace(',', '.') }}</span>
                                 </div>
                                 
@@ -451,7 +465,7 @@
                                                 <tr>
                                                     <td colspan="3" class="text-end fw-bold">Total Calculado por Sistema:</td>
                                                     <td class="text-end fw-bold fs-6 text-primary" id="sys_total_{{ rendicion[0] }}">
-                                                        ${{ "{:,.0f}".format(rendicion[21] or 0).replace(',', '.') }}
+                                                        ${{ "{:,.0f}".format(rendicion[24] or 0).replace(',', '.') }}
                                                     </td>
                                                 </tr>
                                             </tfoot>
@@ -484,7 +498,7 @@
                                             <div id="badge_worker_{{ rendicion[0] }}"></div>
                                             <div class="form-check m-0">
                                                 <input class="form-check-input" type="checkbox" name="worker_comision" id="wc_{{ rendicion[0] }}" {% if rendicion[14] %}checked{% endif %}>
-                                                <label class="form-check-label text-warning small fw-bold" for="wc_{{ rendicion[0] }}">Recibe Comisión</label>
+                                                <label class="form-check-label text-success small fw-bold" for="wc_{{ rendicion[0] }}">Recibe Comisión</label>
                                             </div>
                                         </div>
                                     </div>
@@ -503,7 +517,26 @@
                                             <div id="badge_comp_{{ rendicion[0] }}"></div>
                                             <div class="form-check m-0">
                                                 <input class="form-check-input" type="checkbox" name="companion_comision" id="cc_{{ rendicion[0] }}" {% if rendicion[15] %}checked{% endif %}>
-                                                <label class="form-check-label text-warning small fw-bold" for="cc_{{ rendicion[0] }}">Recibe Comisión</label>
+                                                <label class="form-check-label text-success small fw-bold" for="cc_{{ rendicion[0] }}">Recibe Comisión</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2 border-top pt-2">
+                                        <label class="small text-muted mb-0">Acompañante 2</label>
+                                        <select class="form-select form-select-sm" name="companion2_id" onchange="toggleComp2Div({{ rendicion[0] }}, this)">
+                                            <option value="" data-tipo="">Sin acompañante</option>
+                                            {% for w in workers %}
+                                                {% if w[3] == rendicion[13] %}
+                                                    <option value="{{ w[0] }}" data-tipo="{{ w[2] }}" {% if w[0] == rendicion[17] %}selected{% endif %}>{{ w[1] }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <div class="d-flex justify-content-between align-items-center mt-1" id="comp2_com_div_{{ rendicion[0] }}" {% if not rendicion[17] %}style="display:none;"{% endif %}>
+                                            <div id="badge_comp2_{{ rendicion[0] }}"></div>
+                                            <div class="form-check m-0">
+                                                <input class="form-check-input" type="checkbox" name="companion2_comision" id="cc2_{{ rendicion[0] }}" {% if rendicion[18] %}checked{% endif %}>
+                                                <label class="form-check-label text-success small fw-bold" for="cc2_{{ rendicion[0] }}">Recibe Comisión</label>
                                             </div>
                                         </div>
                                     </div>
@@ -514,7 +547,7 @@
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_debito_{{ rendicion[0] }}" name="venta_debito" value="{{ '{:,.0f}'.format(rendicion[4] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
-                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_debito" value="{{ rendicion[16] or 0 }}">
+                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_debito" value="{{ rendicion[19] or 0 }}">
                                             </div>
                                         </div>
                                         <div class="col-6">
@@ -522,7 +555,7 @@
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_credito_{{ rendicion[0] }}" name="venta_credito" value="{{ '{:,.0f}'.format(rendicion[5] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
-                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_credito" value="{{ rendicion[17] or 0 }}">
+                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_credito" value="{{ rendicion[20] or 0 }}">
                                             </div>
                                         </div>
                                         <div class="col-6">
@@ -530,7 +563,7 @@
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_mp_{{ rendicion[0] }}" name="venta_mp" value="{{ '{:,.0f}'.format(rendicion[6] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
-                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_mp" value="{{ rendicion[18] or 0 }}">
+                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_mp" value="{{ rendicion[21] or 0 }}">
                                             </div>
                                         </div>
                                         <div class="col-6">
@@ -538,7 +571,7 @@
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_efectivo_{{ rendicion[0] }}" name="venta_efectivo" value="{{ '{:,.0f}'.format(rendicion[7] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
-                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_efectivo" value="{{ rendicion[19] or 0 }}">
+                                                <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_efectivo" value="{{ rendicion[22] or 0 }}">
                                             </div>
                                         </div>
                                     </div>

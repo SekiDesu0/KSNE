@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, send_file
 from werkzeug.security import generate_password_hash
 from sqlalchemy import func, and_
 from sqlalchemy.exc import IntegrityError
@@ -489,8 +489,18 @@ def edit_rendicion(id):
     if companion_id and worker_id == companion_id:
         flash("Error: No puedes asignarte a ti mismo como acompañante.", "danger")
         return redirect(url_for('admin.admin_rendiciones'))
+    companion2_id = request.form.get('companion2_id') or None
+    if companion2_id and worker_id == companion2_id:
+        flash("Error: No puedes asignarte a ti mismo como acompañante 2.", "danger")
+        return redirect(url_for('admin.admin_rendiciones'))
     worker_comision = 1 if request.form.get('worker_comision') else 0
     companion_comision = 1 if request.form.get('companion_comision') else 0
+    companion2_comision = 1 if request.form.get('companion2_comision') else 0
+
+    if not companion_id:
+        companion_comision = 0
+    if not companion2_id:
+        companion2_comision = 0
 
     def clean_money(val):
         if not val:
@@ -527,8 +537,10 @@ def edit_rendicion(id):
             rendicion.worker_id = int(worker_id)
             rendicion.modulo_id = int(modulo_id)
             rendicion.companion_id = int(companion_id) if companion_id else None
+            rendicion.companion2_id = int(companion2_id) if companion2_id else None
             rendicion.worker_comision = bool(worker_comision)
             rendicion.companion_comision = bool(companion_comision)
+            rendicion.companion2_comision = bool(companion2_comision)
             rendicion.venta_debito = debito
             rendicion.venta_credito = credito
             rendicion.venta_mp = mp
@@ -653,3 +665,129 @@ def report_modulo_calculo_iva(modulo_id):
                            workers_list=workers_list, worker_actual=worker_id,
                            fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/exportar_excel')
+@admin_required
+def report_modulo_exportar_excel(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    data = report_service.get_modulo_periodo_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+    mod_name, _, _ = report_service.get_modulo_workers_and_anios(modulo_id)
+
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Detalle Ventas"
+
+    thin = Side(style='thin')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+
+    # ── column colors matching web table ──
+    col_colors = {
+        2: '198754',   # Venta Total → text-success green
+        3: '0DCAF0',   # Comisión → text-info cyan
+        4: 'DC3545',   # Gastos → text-danger red
+        5: '6C757D',   # Crédito → text-muted gray
+        6: '6C757D',   # Débito → text-muted gray
+        7: '6C757D',   # Mercado Pago → text-muted gray
+        8: '6C757D',   # Efectivo/Dep. → text-muted gray
+        9: 'e5904d',   # Red. Crédito → custom orange
+        10: 'e5904d',  # Red. Débito → custom orange
+        11: 'e5904d',  # Red. MP → custom orange
+        12: '20c997',  # REDELCOM Neto → teal
+        13: 'FFC107',  # Efectivo - Gastos → text-warning
+        14: '0D6EFD',  # Venta Total Neto → text-primary blue
+    }
+
+    hdr_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    ws.merge_cells('A1:O1')
+    ws['A1'] = f"Resumen Financiero — {mod_name} ({fecha_inicio} a {fecha_fin})"
+    ws['A1'].font = Font(bold=True, size=14)
+
+    headers = ['Día', 'Venta Total', 'Comisión', 'Gastos',
+               'Crédito', 'Débito', 'Mercado Pago', 'Efectivo/Dep.',
+               'Red. Crédito', 'Red. Débito', 'Red. MP',
+               'REDELCOM Neto', 'Efectivo - Gastos', 'Venta Total Neto']
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=h)
+        cell.fill = hdr_fill
+        cell.alignment = center
+        cell.border = border
+        font_color = col_colors.get(col, 'FFFFFF')
+        cell.font = Font(bold=True, color=font_color, size=11)
+
+    for row_idx, dia in enumerate(data['dias_en_periodo'], 4):
+        d = data['data_por_dia'][dia]
+        vals = [
+            dia,
+            d['venta_total'],
+            d['comision'],
+            d['gastos'],
+            d['credito'],
+            d['debito'],
+            d['mp'],
+            d['efectivo'],
+            d['credito'] * 0.97620,
+            d['debito'] * 0.98453,
+            d['mp'] * 0.98691,
+            d['credito'] * 0.97620 + d['debito'] * 0.98453 + d['mp'] * 0.98691,
+            d['efectivo'] - d['gastos'],
+            d['credito'] * 0.97620 + d['debito'] * 0.98453 + d['mp'] * 0.98691 + d['efectivo'] - d['gastos'],
+        ]
+        for col, v in enumerate(vals, 1):
+            cell = ws.cell(row=row_idx, column=col, value=v)
+            cell.border = border
+            if col == 1:
+                cell.alignment = center
+            else:
+                cell.number_format = '#,##0'
+                if col in col_colors:
+                    cell.font = Font(color=col_colors[col])
+
+    total_row = 4 + len(data['dias_en_periodo'])
+    totals = data['totales_mes']
+    total_vals = [
+        'TOTAL',
+        totals['venta_total'],
+        totals['comision'],
+        totals['gastos'],
+        totals['credito'],
+        totals['debito'],
+        totals['mp'],
+        totals['efectivo'],
+        totals['credito'] * 0.97620,
+        totals['debito'] * 0.98453,
+        totals['mp'] * 0.98691,
+        totals['credito'] * 0.97620 + totals['debito'] * 0.98453 + totals['mp'] * 0.98691,
+        totals['efectivo'] - totals['gastos'],
+        totals['credito'] * 0.97620 + totals['debito'] * 0.98453 + totals['mp'] * 0.98691 + totals['efectivo'] - totals['gastos'],
+    ]
+    total_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    for col, v in enumerate(total_vals, 1):
+        cell = ws.cell(row=total_row, column=col, value=v)
+        cell.fill = total_fill
+        cell.border = border
+        if col == 1:
+            cell.alignment = center
+            cell.font = Font(bold=True, color="FFFFFF", size=11)
+        else:
+            cell.number_format = '#,##0'
+            font_color = col_colors.get(col, 'FFFFFF')
+            cell.font = Font(bold=True, color=font_color, size=11)
+
+    for col in range(1, 16):
+        ws.column_dimensions[get_column_letter(col)].width = 16
+    ws.column_dimensions['A'].width = 8
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"reporte_{mod_name}_{fecha_inicio}_{fecha_fin}.xlsx".replace(' ', '_')
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

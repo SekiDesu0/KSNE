@@ -42,10 +42,10 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-warning text-dark shadow-sm h-100 border-0">
+        <div class="card bg-primary text-white shadow-sm h-100 border-0">
             <div class="card-body">
-                <div class="text-uppercase small mb-1 opacity-75">Días Trabajados</div>
-                <h3 class="card-title mb-0">{{ dias_activos }} <span class="fs-6 fw-normal">/ 31</span></h3>
+                <div class="text-uppercase small mb-1 opacity-75">Venta Total Neto</div>
+                <h3 class="card-title mb-0">${{ "{:,.0f}".format(totales_mes.credito * 0.97620 + totales_mes.debito * 0.98453 + totales_mes.mp * 0.98691 + totales_mes.efectivo - totales_mes.gastos).replace(',', '.') }}</h3>
             </div>
         </div>
     </div>
@@ -63,9 +63,9 @@
     <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center pb-0">
         <span class="fw-bold text-muted text-uppercase"><i class="bi bi-calendar3 me-1"></i> Desglose Diario</span>
         
-        <button class="btn btn-success btn-sm shadow-sm" onclick="alert('Próximamente: Esto descargará un Excel con el detalle de todos los productos vendidos por día.')">
+        <a class="btn btn-success btn-sm shadow-sm" href="{{ url_for('admin.report_modulo_exportar_excel', modulo_id=modulo_id, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, worker_id=worker_actual) }}">
             <i class="bi bi-file-earmark-excel-fill me-1"></i> Exportar Detalle Completo (.xlsx)
-        </button>
+        </a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -77,12 +77,20 @@
                         <th class="py-2 text-info" rowspan="2">COMISIÓN</th>
                         <th class="py-2 text-danger" rowspan="2">GASTOS</th>
                         <th class="py-1 border-bottom-0" colspan="4">MEDIOS DE PAGO</th>
+                        <th class="py-1 border-bottom-0" colspan="3">COMISIÓN REDELCOM</th>
+                        <th class="py-1 border-bottom-0" colspan="3">TOTALES NETOS</th>
                     </tr>
                     <tr>
                         <th class="py-1 text-muted">Crédito</th>
                         <th class="py-1 text-muted">Débito</th>
                         <th class="py-1 text-muted">Mercado Pago</th>
                         <th class="py-1 text-muted">Efectivo/Dep.</th>
+                        <th class="py-1" style="color:#e5904d">Crédito (-2.38%)</th>
+                        <th class="py-1" style="color:#e5904d">Débito (-1.547%)</th>
+                        <th class="py-1" style="color:#e5904d">MP (-1.309%)</th>
+                        <th class="py-1" style="color:#20c997">REDELCOM Neto</th>
+                        <th class="py-1 text-warning">Efectivo - Gastos</th>
+                        <th class="py-1 text-primary fw-bold">Venta Total Neto</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -105,6 +113,17 @@
                             <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.debito).replace(',', '.')) if d.debito > 0 else "-" }}</td>
                             <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.mp).replace(',', '.')) if d.mp > 0 else "-" }}</td>
                             <td class="align-middle numeric-cell text-muted">{{ ("$" ~ "{:,.0f}".format(d.efectivo).replace(',', '.')) if d.efectivo > 0 else "-" }}</td>
+                            {% set red_credito = d.credito * 0.97620 %}
+                            {% set red_debito = d.debito * 0.98453 %}
+                            {% set red_mp = d.mp * 0.98691 %}
+                            {% set redelcom_neto = red_credito + red_debito + red_mp %}
+                            {% set efectivo_menos_gastos = d.efectivo - d.gastos %}
+                            <td class="align-middle numeric-cell" style="color:#e5904d">{{ ("$" ~ "{:,.0f}".format(red_credito).replace(',', '.')) if red_credito > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell" style="color:#e5904d">{{ ("$" ~ "{:,.0f}".format(red_debito).replace(',', '.')) if red_debito > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell" style="color:#e5904d">{{ ("$" ~ "{:,.0f}".format(red_mp).replace(',', '.')) if red_mp > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell" style="color:#20c997">{{ ("$" ~ "{:,.0f}".format(redelcom_neto).replace(',', '.')) if redelcom_neto > 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell text-warning fw-bold">{{ ("$" ~ "{:,.0f}".format(efectivo_menos_gastos).replace(',', '.')) if efectivo_menos_gastos != 0 else "-" }}</td>
+                            <td class="align-middle numeric-cell text-primary fw-bold">{{ ("$" ~ "{:,.0f}".format(redelcom_neto + efectivo_menos_gastos).replace(',', '.')) if (redelcom_neto + efectivo_menos_gastos) != 0 else "-" }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -125,6 +144,14 @@
                         <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.debito).replace(',', '.') }}</td>
                         <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.mp).replace(',', '.') }}</td>
                         <td class="align-middle numeric-cell py-2">${{ "{:,.0f}".format(totales_mes.efectivo).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2" style="color:#e5904d">${{ "{:,.0f}".format(totales_mes.credito * 0.97620).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2" style="color:#e5904d">${{ "{:,.0f}".format(totales_mes.debito * 0.98453).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2" style="color:#e5904d">${{ "{:,.0f}".format(totales_mes.mp * 0.98691).replace(',', '.') }}</td>
+                        {% set t_redelcom = totales_mes.credito * 0.97620 + totales_mes.debito * 0.98453 + totales_mes.mp * 0.98691 %}
+                        {% set t_efectivo_menos = totales_mes.efectivo - totales_mes.gastos %}
+                        <td class="align-middle numeric-cell py-2" style="color:#20c997">${{ "{:,.0f}".format(t_redelcom).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2 text-warning">${{ "{:,.0f}".format(t_efectivo_menos).replace(',', '.') }}</td>
+                        <td class="align-middle numeric-cell py-2 text-primary fw-bold">${{ "{:,.0f}".format(t_redelcom + t_efectivo_menos).replace(',', '.') }}</td>
                     </tr>
                 </tfoot>
             </table>
