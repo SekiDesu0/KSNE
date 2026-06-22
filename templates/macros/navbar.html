@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm border-bottom mb-4">
     <div class="container">
-        <a class="navbar-brand d-flex flex-column align-items-start text-primary-emphasis" href="{{ url_for('index') }}" style="gap: 0;">
+        <a class="navbar-brand d-flex flex-column align-items-start text-primary-emphasis" href="{{ url_for('auth.index') }}" style="gap: 0;">
             
             <div class="d-flex align-items-center">
                 <i id="brandIcon" class="bi bi-receipt-cutoff fs-3 text-info me-2"></i>
@@ -21,33 +21,33 @@
                 <ul class="navbar-nav me-auto">
                     {% if session.get('is_admin') %}
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if 'rendiciones' in request.path }}" href="{{ url_for('admin_rendiciones') }}">
+                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if 'rendiciones' in request.path }}" href="{{ url_for('admin.admin_rendiciones') }}">
                                 <i class="bi bi-journal-text me-1"></i> Rendiciones
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if request.endpoint == 'manage_workers' }}" href="{{ url_for('manage_workers') }}">
+                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if request.endpoint == 'admin.manage_workers' }}" href="{{ url_for('admin.manage_workers') }}">
                                 <i class="bi bi-people me-1"></i> Trabajadores
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if request.endpoint == 'manage_structure' }}" href="{{ url_for('manage_structure') }}">
+                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if request.endpoint == 'admin.manage_structure' }}" href="{{ url_for('admin.manage_structure') }}">
                                 <i class="bi bi-diagram-3 me-1"></i> Estructura
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if request.endpoint == 'manage_products' }}" href="{{ url_for('manage_products') }}">
+                            <a class="nav-link d-flex align-items-center {{ 'active fw-bold' if request.endpoint == 'admin.manage_products' }}" href="{{ url_for('admin.manage_products') }}">
                                 <i class="bi bi-box-seam me-1"></i> Productos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint and 'reporte' in request.endpoint %}active fw-bold text-white{% endif %}" href="{{ url_for('admin_reportes_index') }}">
+                            <a class="nav-link {% if request.endpoint and 'reporte' in request.endpoint %}active fw-bold text-white{% endif %}" href="{{ url_for('admin.admin_reportes_index') }}">
                                 <i class="bi bi-graph-up me-1"></i> Reportes
                             </a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link {{ 'active fw-bold' if request.endpoint == 'worker_dashboard' }}" href="{{ url_for('worker_dashboard') }}">
+                            <a class="nav-link {{ 'active fw-bold' if request.endpoint == 'worker.worker_dashboard' }}" href="{{ url_for('worker.worker_dashboard') }}">
                                 <i class="bi bi-speedometer2 me-1"></i> Mis Rendiciones
                             </a>
                         </li>
@@ -63,7 +63,7 @@
                         <i class="bi bi-person-circle me-1 text-info"></i> {{ session.get('rut') }}
                     </span>
 
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
                         Salir
                     </a>
                 </div>
@@ -72,52 +72,3 @@
     </div>
 </nav>
 
-<style>
-    @keyframes baguetteRoll {
-        0% { transform: rotate(0deg) scale(1.2); }
-        50% { transform: rotate(180deg) scale(1.5); }
-        100% { transform: rotate(360deg) scale(1); }
-    }
-    .baguette-spin {
-        display: inline-block;
-        animation: baguetteRoll 1s ease-in-out;
-        font-style: normal;
-    }
-</style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const brandIcon = document.getElementById("brandIcon");
-        if (brandIcon) {
-            let clickCount = 0;
-            let clickResetTimer;
-
-            brandIcon.addEventListener("click", function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                clickCount++;
-                
-                clearTimeout(clickResetTimer);
-                clickResetTimer = setTimeout(() => {
-                    clickCount = 0;
-                }, 800); 
-
-                if (clickCount >= 5) {
-                    clickCount = 0;
-                    clearTimeout(clickResetTimer);
-
-                    const originalClass = this.className;
-                    
-                    this.className = "fs-3 me-2 baguette-spin";
-                    this.innerHTML = "&#129366;";
-                    
-                    setTimeout(() => {
-                        this.className = originalClass;
-                        this.innerHTML = "";
-                    }, 1000);
-                }
-            });
-        }
-    });
-</script>

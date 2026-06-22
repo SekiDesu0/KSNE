@@ -1,29 +1,20 @@
 {% extends "macros/base.html" %}
 {% from 'macros/modals.html' import confirm_modal, edit_worker_modal %}
+{% from "macros/ui.html" import flashed_messages %}
 
 {% block title %}Gestión de Trabajadores{% endblock %}
-
-{% block head %}
-<!-- HEAD -->
-{% endblock %}
 
 {% block content %}
 <h2 class="mb-4">Gestión de Trabajadores</h2>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{{ flashed_messages() }}
 
 {{ edit_worker_modal(modulos) }}
 
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">Agregar Nuevo Trabajador</div>
     <div class="card-body">
-        <form method="POST" action="{{ url_for('manage_workers') }}">
+        <form method="POST" action="{{ url_for('admin.manage_workers') }}">
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label">RUT</label>
@@ -134,7 +125,7 @@
                             id='delWorker' ~ worker[0],
                             title='Eliminar Trabajador',
                             message='¿Eliminar a ' ~ worker[2] ~ '?',
-                            action_url=url_for('delete_worker', id=worker[0]),
+                            action_url=url_for('admin.delete_worker', id=worker[0]),
                             btn_class='btn-danger'
                         ) }}
                     </td>
@@ -159,116 +150,5 @@
 ) }}
 {% endblock %}
 {% block scripts %}
-
-<script>
-    const editWorkerModal = document.getElementById('editWorkerModal');
-    const confirmResetModal = document.getElementById('confirmResetPass');
-
-    if (editWorkerModal) {
-        editWorkerModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            
-            // Si el modal se abre desde el botón "Editar" de la tabla
-            if (button && button.hasAttribute('data-id')) {
-                const id = button.getAttribute('data-id');
-                const name = button.getAttribute('data-name');
-                
-                const editForm = editWorkerModal.querySelector('#editWorkerForm');
-                const resetForm = confirmResetModal.querySelector('form');
-                
-                editForm.action = "/admin/workers/edit/" + id;
-                resetForm.action = "/admin/workers/reset_password/" + id;
-
-                confirmResetModal.querySelector('.modal-body').textContent = `¿Estás seguro de generar una nueva contraseña para ${name}? La anterior dejará de funcionar.`;
-
-                editWorkerModal.querySelector('#edit_worker_rut').value = button.getAttribute('data-rut');
-                editWorkerModal.querySelector('#edit_worker_name').value = name;
-                editWorkerModal.querySelector('#edit_worker_phone').value = button.getAttribute('data-phone');
-                editWorkerModal.querySelector('#edit_worker_modulo').value = button.getAttribute('data-modulo');
-                editWorkerModal.querySelector('#edit_worker_tipo').value = button.getAttribute('data-tipo'); 
-            }
-        });
-    }
-
-    // Lógica para reabrir el modal de edición al cancelar el de confirmación
-    if (confirmResetModal) {
-        // Buscamos el botón de cancelar dentro del modal de confirmación
-        const btnCancelar = confirmResetModal.querySelector('.btn-secondary');
-        const btnCerrarX = confirmResetModal.querySelector('.btn-close');
-
-        const reabrirEdicion = () => {
-            const modalEdicion = new bootstrap.Modal(editWorkerModal);
-            modalEdicion.show();
-        };
-
-        btnCancelar.addEventListener('click', reabrirEdicion);
-        btnCerrarX.addEventListener('click', reabrirEdicion);
-    }
-
-    document.getElementById('rutInput').addEventListener('input', function(e) {
-        let value = this.value.replace(/[^0-9kK]/g, '').toUpperCase();
-        
-        // Bloquear el largo interno a 9 caracteres (8 cuerpo + 1 dv)
-        if (value.length > 9) {
-            value = value.slice(0, 9);
-        }
-
-        if (value.length > 1) {
-            let body = value.slice(0, -1);
-            let dv = value.slice(-1);
-            body = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            this.value = `${body}-${dv}`;
-        } else {
-            this.value = value;
-        }
-    });
-
-    function formatPhone(input) {
-        let value = input.value.replace(/\D/g, '');
-        if (value.startsWith('56')) value = value.substring(2);
-        value = value.substring(0, 9);
-        if (value.length > 5) input.value = value.replace(/(\d{1})(\d{4})(\d+)/, '$1 $2 $3');
-        else if (value.length > 1) input.value = value.replace(/(\d{1})(\d+)/, '$1 $2');
-        else input.value = value;
-    }
-
-    document.querySelectorAll('.phone-input, #phoneInput').forEach(inp => {
-        inp.addEventListener('input', () => formatPhone(inp));
-    });
-
-
-    // --- LÓGICA DE FILTRADO DE TRABAJADORES ---
-    const searchInputWorker = document.getElementById('searchWorker');
-    const moduleSelectFilter = document.getElementById('filterModule');
-    const typeSelectFilter = document.getElementById('filterType');
-    const workerRows = document.querySelectorAll('.worker-row');
-
-    function filterWorkers() {
-        const searchTerm = searchInputWorker.value.toLowerCase();
-        const selectedModule = moduleSelectFilter.value;
-        const selectedType = typeSelectFilter.value;
-
-        workerRows.forEach(row => {
-            // Asumiendo que celda 0 es RUT y celda 1 es Nombre
-            const rut = row.cells[0].textContent.toLowerCase();
-            const name = row.cells[1].textContent.toLowerCase();
-            const rowModule = row.getAttribute('data-modulo');
-            const rowType = row.getAttribute('data-tipo');
-
-            const matchesSearch = rut.includes(searchTerm) || name.includes(searchTerm);
-            const matchesModule = selectedModule === 'all' || rowModule === selectedModule;
-            const matchesType = selectedType === 'all' || rowType === selectedType;
-
-            if (matchesSearch && matchesModule && matchesType) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    searchInputWorker.addEventListener('input', filterWorkers);
-    moduleSelectFilter.addEventListener('change', filterWorkers);
-    typeSelectFilter.addEventListener('change', filterWorkers);
-</script>
+<script src="{{ url_for('static', filename='js/admin_workers.js') }}"></script>
 {% endblock %}

@@ -1,29 +1,20 @@
 {% extends "macros/base.html" %}
 {% from 'macros/modals.html' import confirm_modal, edit_product_modal %}
+{% from "macros/ui.html" import flashed_messages %}
 
 {% block title %}Catálogo de Productos{% endblock %}
-
-{% block head %}
-<!-- HEAD -->
-{% endblock %}
 
 {% block content %}
 <h2 class="mb-4">Catálogo de Productos por Zona</h2>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{{ flashed_messages() }}
 
 {{ edit_product_modal(zonas) }}
 
 <div class="card mb-4 shadow-sm">
     <div class="card-header bg-primary text-white">Agregar Producto Maestro</div>
     <div class="card-body">
-        <form method="POST" action="{{ url_for('manage_products') }}">
+        <form method="POST" action="{{ url_for('admin.manage_products') }}">
             <div class="row g-3">
                 <div class="col-md-10">
                     <input type="text" class="form-control" name="name" placeholder="Nombre del Producto" required>
@@ -69,7 +60,7 @@
                             id='deleteProd' ~ prod.id,
                             title='Eliminar Producto',
                             message='¿Eliminar "' ~ prod.name ~ '"? Esto fallará si el producto ya tiene ventas registradas.',
-                            action_url=url_for('delete_product', id=prod.id),
+                            action_url=url_for('admin.delete_product', id=prod.id),
                             btn_class='btn-danger',
                             btn_text='Eliminar'
                         ) }}
@@ -85,7 +76,7 @@
 <div class="modal fade" id="pricesModal{{ prod.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('update_product_prices', id=prod.id) }}">
+            <form method="POST" action="{{ url_for('admin.update_product_prices', id=prod.id) }}">
                 <div class="modal-header">
                     <h5 class="modal-title">Precios: {{ prod.name }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -156,7 +147,7 @@
                                 <td class="align-middle">${{ "{:,.0f}".format(futuro.price).replace(',', '.') }}</td>
                                 <td class="align-middle">${{ "{:,.0f}".format(futuro.commission).replace(',', '.') }}</td>
                                 <td class="align-middle">
-                                    <form action="{{ url_for('cancel_scheduled_price', id=futuro.id) }}" method="POST" class="d-inline">
+                                    <form action="{{ url_for('admin.cancel_scheduled_price', id=futuro.id) }}" method="POST" class="d-inline">
                                         <button type="submit" class="btn btn-danger btn-sm py-0 px-2" title="Cancelar este cambio">
                                             <i class="bi bi-x-lg"></i>
                                         </button>
@@ -196,132 +187,6 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-    let priceChartInstance = null;
-
-    async function showHistory(prodId, prodName) {
-        // Abrir el modal inmediatamente para que no parezca que la app murió
-        const modal = new bootstrap.Modal(document.getElementById('chartModal'));
-        document.getElementById('chartModalTitle').innerText = 'Fluctuación de Precio: ' + prodName;
-        modal.show();
-
-        // Traer la data desde nuestra nueva API
-        const res = await fetch(`/admin/api/productos/${prodId}/historial`);
-        const data = await res.json();
-
-        // Extraer zonas únicas y fechas únicas (limpiando la hora para el eje X)
-        const zonas = [...new Set(data.map(d => d.zona))];
-        const fechas = [...new Set(data.map(d => d.fecha.split(' ')[0]))].sort(); 
-
-        const colors = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0'];
-
-        const datasets = zonas.map((zona, index) => {
-            let lastPrice = 0; 
-            
-            // Rellenar huecos: Si no hubo cambio un día, se mantiene el precio del día anterior
-            const dataPoints = fechas.map(f => {
-                const hits = data.filter(d => d.zona === zona && d.fecha.startsWith(f));
-                if (hits.length > 0) {
-                    lastPrice = hits[hits.length - 1].price; // Tomar el último cambio de ese día
-                }
-                return lastPrice;
-            });
-
-            return {
-                label: zona,
-                data: dataPoints,
-                borderColor: colors[index % colors.length],
-                backgroundColor: colors[index % colors.length],
-                stepped: true, // Hace que se vea como escaleras en vez de curvas raras
-                borderWidth: 2
-            };
-        });
-
-        // Dibujar (o redibujar) el gráfico
-        const ctx = document.getElementById('priceChart').getContext('2d');
-        if (priceChartInstance) {
-            priceChartInstance.destroy();
-        }
-
-        priceChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: fechas,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) { return '$' + value.toLocaleString('es-CL'); }
-                        }
-                    }
-                }
-            }
-        });
-    }
-</script>
-
-<script>
-    const editModal = document.getElementById('editProductModal');
-    if (editModal) {
-        editModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            
-            // Atributos extraídos del botón
-            const id = button.getAttribute('data-id');
-            const name = button.getAttribute('data-name');
-            const price = button.getAttribute('data-price');
-            const commission = button.getAttribute('data-commission');
-            const zonaId = button.getAttribute('data-zona');
-
-            // Actualizamos el destino del formulario
-            const form = editModal.querySelector('#editProductForm');
-            form.action = `/admin/productos/edit/${id}`;
-
-            // Llenamos los inputs
-            editModal.querySelector('#edit_name').value = name;
-            editModal.querySelector('#edit_price').value = price;
-            editModal.querySelector('#edit_commission').value = commission;
-            editModal.querySelector('#edit_zona_id').value = zonaId;
-
-            // Forzamos el formato de miles (puntos) inmediatamente
-            editModal.querySelectorAll('.money-input').forEach(input => {
-                input.dispatchEvent(new Event('input'));
-            });
-        });
-    }
-
-    document.querySelectorAll('.money-input').forEach(function(input) {
-        input.addEventListener('input', function(e) {
-            let value = this.value.replace(/\D/g, '');
-            if (value !== '') {
-                this.value = parseInt(value, 10).toLocaleString('es-CL');
-            } else {
-                this.value = '';
-            }
-        });
-    });
-
-    const searchInput = document.getElementById('searchProduct');
-    const productRows = document.querySelectorAll('.product-row');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const term = this.value.toLowerCase();
-            productRows.forEach(row => {
-                // Asume que el nombre está en la primera celda
-                const name = row.cells[0].textContent.toLowerCase();
-                row.style.display = name.includes(term) ? '' : 'none';
-            });
-        });
-    }
-</script>
+<script src="{{ url_for('static', filename='js/product-history-chart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin_productos.js') }}"></script>
 {% endblock %}

@@ -1,11 +1,24 @@
 name: rendiciones
+
 services:
-    rendiciones:
-        ports:
-            - 5500:5000
-        volumes:
-            - /home/shironeko/Documents/dockerVols/rendiciones/db:/app/db
-            - /home/shironeko/Documents/dockerVols/rendiciones/static/cache:/app/static/cache
-        container_name: rendiciones-server
-        image: rendiciones:latest
-        restart: unless-stopped
+  rendiciones:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rendiciones:latest
+    container_name: rendiciones-server
+    ports:
+      - "5500:5000"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - /home/shironeko/Documents/dockerVols/rendiciones/db:/app/db
+      - /home/shironeko/Documents/dockerVols/rendiciones/static/cache:/app/static/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5000/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

@@ -1,48 +1,13 @@
 {% extends "macros/base.html" %}
 {% from "macros/modals.html" import report_filters %}
+{% from "macros/ui.html" import back_link %}
 
 {% block title %}Reporte: Cálculo de IVA - {{ modulo_name }}{% endblock %}
-
-{% block styles %}
-<style>
-    .table-container {
-        max-height: 75vh;
-        overflow-y: auto;
-        overflow-x: auto;
-    }
-    
-    .sticky-col {
-        position: sticky;
-        left: 0;
-        z-index: 2;
-        background-color: var(--bs-body-bg);
-        border-right: 2px solid var(--bs-border-color) !important;
-    }
-    
-    thead th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background-color: var(--bs-body-bg);
-        box-shadow: inset 0 -1px 0 var(--bs-border-color);
-    }
-
-    thead th.sticky-col {
-        z-index: 3;
-    }
-    
-    .numeric-cell {
-        font-family: 'Courier New', Courier, monospace;
-    }
-</style>
-{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <a href="{{ url_for('admin_reportes_index') }}" class="btn btn-outline-secondary btn-sm mb-2">
-            <i class="bi bi-arrow-left"></i> Volver al Menú
-        </a>
+        {{ back_link(url_for('admin.admin_reportes_index'), 'Volver al Menú') }}
         <h2>Cálculo de IVA</h2>
     </div>
     <div class="text-end">
@@ -51,7 +16,7 @@
     </div>
 </div>
 {{ report_filters(
-    url_for('report_modulo_periodo', modulo_id=modulo_id),
+    url_for('admin.report_modulo_periodo', modulo_id=modulo_id),
     workers_list,
     worker_actual,
     dia_actual,

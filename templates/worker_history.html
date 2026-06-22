@@ -1,23 +1,18 @@
 {% extends "macros/base.html" %}
 {% from 'macros/modals.html' import rendicion_detail_modal %}
+{% from "macros/ui.html" import flashed_messages %}
 
 {% block title %}Mis Rendiciones{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <h2 class="mb-0">Mis Rendiciones</h2>
-    <a href="{{ url_for('new_rendicion') }}" class="btn btn-success shadow-sm align-self-start align-self-md-auto">
+    <a href="{{ url_for('worker.new_rendicion') }}" class="btn btn-success shadow-sm align-self-start align-self-md-auto">
         <i class="bi bi-plus-circle me-2"></i>Nueva Rendición
     </a>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{{ flashed_messages() }}
 
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">

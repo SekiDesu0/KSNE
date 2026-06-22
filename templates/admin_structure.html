@@ -1,18 +1,13 @@
 {% extends "macros/base.html" %}
 {% import "macros/modals.html" as modals %}
+{% from "macros/ui.html" import flashed_messages %}
 
 {% block title %}Estructura Operativa{% endblock %}
 
 {% block content %}
 <h2 class="mb-4">Estructura Operativa</h2>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{{ flashed_messages() }}
 
 <div class="row">
     <div class="col-md-6 mb-4">
@@ -21,7 +16,7 @@
                 <h5 class="mb-0">Gestión de Zonas</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('manage_structure') }}" class="mb-4">
+                <form method="POST" action="{{ url_for('admin.manage_structure') }}" class="mb-4">
                     <input type="hidden" name="action" value="add_zona">
                     <div class="input-group">
                         <input type="text" class="form-control" name="zona_name" placeholder="Nombre de la Zona (ej: Norte)" required>
@@ -53,7 +48,7 @@
                                     'deleteZona' ~ zona[0], 
                                     'Eliminar Zona', 
                                     '¿Estás seguro de eliminar la zona "' ~ zona[1] ~ '"? Esto podría afectar a los módulos asociados.', 
-                                    url_for('delete_structure', type='zona', id=zona[0]),
+                                    url_for('admin.delete_structure', type='zona', id=zona[0]),
                                     'btn-danger',
                                     'Eliminar'
                                 ) }}
@@ -76,7 +71,7 @@
                 <h5 class="mb-0">Gestión de Módulos</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('manage_structure') }}" class="mb-4">
+                <form method="POST" action="{{ url_for('admin.manage_structure') }}" class="mb-4">
                     <input type="hidden" name="action" value="add_modulo">
                     <div class="row g-2">
                         <div class="col-md-5">
@@ -122,7 +117,7 @@
                                     'deleteModulo' ~ modulo[0], 
                                     'Eliminar Módulo', 
                                     '¿Deseas eliminar el módulo "' ~ modulo[1] ~ '"?', 
-                                    url_for('delete_structure', type='modulo', id=modulo[0]),
+                                    url_for('admin.delete_structure', type='modulo', id=modulo[0]),
                                     'btn-danger',
                                     'Eliminar'
                                 ) }}

@@ -1,4 +1,7 @@
-/* navbar */
+/* ============================================================
+   GLOBAL THEME — applies to both light and dark modes
+   ============================================================ */
+
 .navbar {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
@@ -13,44 +16,45 @@
     transition: color 0.2s ease-in-out;
 }
 
-[data-bs-theme="light"] #theme-icon.bi-moon-stars {
-    color: #5856d6;
-}
-
-[data-bs-theme="dark"] #theme-icon.bi-sun {
-    color: #ffc107;
-}
-
 #theme-switcher.nav-link {
     color: inherit !important;
 }
 
-/* form edicion de trabajador */
+/* Theme toggle button — needs to be visible in both modes */
+#theme-toggle-btn {
+    color: var(--bs-body-color);
+}
+#theme-toggle-btn:hover {
+    color: var(--bs-emphasis-color);
+}
+
+/* Make .text-info readable in BOTH modes
+   Dark mode keeps the bright cyan with subtle glow,
+   light mode uses a darker, eye-friendly teal. */
+[data-bs-theme="dark"] .text-info {
+    color: #38bdf8 !important;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+[data-bs-theme="light"] .text-info {
+    color: #0a6c7e !important;
+    text-shadow: none;
+}
+
+/* ============================================================
+   DARK MODE — custom overrides
+   ============================================================ */
+
 [data-bs-theme="dark"] .form-control[readonly] {
     background-color: #1a1d21;
-    border-color: #373b3e;    
-    color: #e3e6e8;           
-    opacity: 1;               
-    cursor: not-allowed;      
+    border-color: #373b3e;
+    color: #e3e6e8;
+    opacity: 1;
+    cursor: not-allowed;
 }
 
 [data-bs-theme="dark"] .text-muted-rut {
-    color: #adb5bd !important; /* Un gris medio para el label "RUT (No editable)" */
+    color: #adb5bd !important;
 }
-/* botones acciones */
-@media (max-width: 576px) {
-    .col-barcode {
-        display: none;
-    }
-
-    .btn-edit-sm,
-    .btn-del-sm {
-        padding: 4px 7px;
-        font-size: 0.75rem;
-    }
-}
-
-/* fila calculo total dashboard trabajador */
 
 [data-bs-theme="dark"] .custom-total-row {
     background-color: rgba(30, 41, 59, 0.7);
@@ -65,7 +69,85 @@
     padding-right: 0;
 }
 
-.text-info {
-    color: #38bdf8 !important; /* Azul cielo moderno */
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+[data-bs-theme="dark"] #theme-icon.bi-sun {
+    color: #ffc107;
+}
+
+/* ============================================================
+   LIGHT MODE — custom overrides (eye-friendly defaults)
+   ============================================================ */
+
+/* Soft warm-gray body to reduce glare */
+[data-bs-theme="light"] body {
+    background-color: #f4f6f8;
+    color: #1f2937;
+}
+
+/* Subtle, lower-contrast borders in light mode */
+[data-bs-theme="light"] .card,
+[data-bs-theme="light"] .navbar,
+[data-bs-theme="light"] .modal-content,
+[data-bs-theme="light"] .list-group-item {
+    border-color: #d8dde2;
+}
+
+/* Card backgrounds pop gently on the off-white body */
+[data-bs-theme="light"] .card {
+    background-color: #ffffff;
+    box-shadow: 0 .125rem .25rem rgba(15, 23, 42, .06) !important;
+}
+
+[data-bs-theme="light"] .form-control[readonly] {
+    background-color: #f1f3f5;
+    border-color: #d8dde2;
+    color: #495057;
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+[data-bs-theme="light"] .text-muted-rut {
+    color: #6c757d !important;
+}
+
+[data-bs-theme="light"] .custom-total-row {
+    background-color: #eef2f6;
+    color: #1f2937;
+    border-top: 2px solid #cbd5e1;
+}
+
+[data-bs-theme="light"] #total_productos_calc {
+    box-shadow: none;
+    outline: none;
+    text-align: right;
+    padding-right: 0;
+}
+
+[data-bs-theme="light"] #theme-icon.bi-moon-stars {
+    color: #5856d6;
+}
+
+/* Make Bootstrap's bg-dark-subtle in cards/headers lighter and warmer in light mode */
+[data-bs-theme="light"] .bg-dark-subtle {
+    background-color: #eef2f6 !important;
+}
+
+/* Lighten the harshness of bg-body-tertiary slightly */
+[data-bs-theme="light"] .bg-body-tertiary {
+    background-color: #eaeef2 !important;
+}
+
+/* ============================================================
+   RESPONSIVE — small-screen action buttons
+   ============================================================ */
+
+@media (max-width: 576px) {
+    .col-barcode {
+        display: none;
+    }
+
+    .btn-edit-sm,
+    .btn-del-sm {
+        padding: 4px 7px;
+        font-size: 0.75rem;
+    }
 }

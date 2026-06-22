@@ -1,10 +1,8 @@
 {% extends "macros/base.html" %}
 {% from 'macros/modals.html' import alert_modal, rendicion_detail_modal, confirm_modal, edit_rendicion_modal %}
+{% from "macros/ui.html" import flashed_messages %}
 
 {% block title %}Historial de Rendiciones{% endblock %}
-
-{% block head %}
-{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -13,7 +11,7 @@
 
 <div class="card shadow-sm mb-4 border-0">
     <div class="card-body bg-body-tertiary rounded p-3">
-        <form method="GET" action="{{ url_for('admin_rendiciones') }}" id="filterForm">
+        <form method="GET" action="{{ url_for('admin.admin_rendiciones') }}" id="filterForm">
             <div class="row g-2 align-items-end">
                 <div class="col-md-2">
                     <label class="form-label small text-muted mb-1">Año</label>
@@ -77,13 +75,7 @@
     </div>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message|safe }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{{ flashed_messages() }}
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
@@ -123,7 +115,7 @@
                             id='deleteRendicion' ~ r[0],
                             title='Eliminar Rendición',
                             message='¿Estás seguro de que deseas eliminar la rendición #' ~ r[0] ~ '? Esta acción no se puede deshacer.',
-                            action_url=url_for('delete_rendicion', id=r[0]),
+                            action_url=url_for('admin.delete_rendicion', id=r[0]),
                             btn_class='btn-danger',
                             btn_text='Eliminar'
                         ) }}
@@ -142,171 +134,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // Función para manejar las etiquetas de jornada (Full/Part Time)
-    function updateBadge(selectElement, badgeId) {
-        const option = selectElement.options[selectElement.selectedIndex];
-        const tipo = option.getAttribute('data-tipo');
-        const badgeDiv = document.getElementById(badgeId);
-        
-        if (!badgeDiv) return;
-        
-        if (!tipo) {
-            badgeDiv.innerHTML = '';
-            return;
-        }
-
-        const color = (tipo === 'Full Time') ? 'bg-success' : 'bg-secondary';
-        badgeDiv.innerHTML = `<span class="badge ${color}">${tipo}</span>`;
-    }
-
-    function toggleCompDiv(id, select) {
-        const compDiv = document.getElementById(`comp_com_div_${id}`);
-        compDiv.style.display = select.value ? 'flex' : 'none';
-        updateBadge(select, `badge_comp_${id}`);
-        updateComisionToggle(select, `cc_${id}`);
-    }
-
-    function updateComisionToggle(selectElement, toggleId) {
-        const option = selectElement.options[selectElement.selectedIndex];
-        const tipoJornada = option.getAttribute('data-tipo');
-        const toggleSwitch = document.getElementById(toggleId);
-        
-        if (toggleSwitch && tipoJornada) {
-            // Explicitly set to true if Full Time, false otherwise
-            toggleSwitch.checked = (tipoJornada === 'Full Time');
-        } else if (toggleSwitch && !selectElement.value) {
-            // If "Sin acompañante" is selected, turn it off
-             toggleSwitch.checked = false;
-        }
-        
-        // Actualizar el badge también
-        const baseId = toggleId.split('_')[1];
-        const targetBadge = toggleId.startsWith('wc') ? `badge_worker_${baseId}` : `badge_comp_${baseId}`;
-        updateBadge(selectElement, targetBadge);
-    }
-
-    // Recalcular total de la línea de producto y el total del sistema
-    function recalcProductLine(input) {
-        const qty = parseInt(input.value) || 0;
-        const price = parseInt(input.getAttribute('data-price')) || 0;
-        const rid = input.getAttribute('data-rid');
-        const row = input.closest('tr');
-        
-        // Actualizar línea individual
-        const lineTotal = qty * price;
-        row.querySelector('.item-total-line').innerText = '$' + lineTotal.toLocaleString('es-CL');
-
-        // Recalcular total general del sistema en el modal
-        const modal = document.getElementById(`editRendicion${rid}`);
-        let newSysTotal = 0;
-        modal.querySelectorAll('.prod-qty-input').forEach(inp => {
-            newSysTotal += (parseInt(inp.value) || 0) * (parseInt(inp.getAttribute('data-price')) || 0);
-        });
-        document.getElementById(`sys_total_${rid}`).innerText = '$' + newSysTotal.toLocaleString('es-CL');
-    }
-
-    function calcTotalEdit(id) {
-        const getVal = (inputId) => parseInt(document.getElementById(inputId).value.replace(/\D/g, '')) || 0;
-        const total = getVal(`edit_debito_${id}`) + getVal(`edit_credito_${id}`) + getVal(`edit_mp_${id}`) + getVal(`edit_efectivo_${id}`);
-        document.getElementById(`display_nuevo_total_${id}`).innerText = '$' + total.toLocaleString('es-CL');
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const editModals = document.querySelectorAll('[id^="editRendicion"]');
-        const editForms = document.querySelectorAll('form[action*="/admin/rendiciones/edit/"]');
-        const errorModalEl = document.getElementById('errorPersonaModal');
-        const errorModal = new bootstrap.Modal(errorModalEl);
-        const errorBody = document.getElementById('errorPersonaModalBody');
-
-        editForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                const workerId = this.querySelector('select[name="worker_id"]').value;
-                const companionId = this.querySelector('select[name="companion_id"]').value;
-
-                if (companionId && workerId === companionId) {
-                    e.preventDefault();
-                    errorBody.innerHTML = "<strong>Error:</strong> El trabajador titular y el acompañante no pueden ser la misma persona. Por favor, selecciona a alguien más.";
-                    errorModal.show();
-                }
-            });
-        });
-
-        editModals.forEach(modal => {
-            // Inicializar badges al abrir
-            modal.addEventListener('show.bs.modal', function() {
-                const rid = this.id.replace('editRendicion', '');
-                updateBadge(this.querySelector('select[name="worker_id"]'), `badge_worker_${rid}`);
-                const compSelect = this.querySelector('select[name="companion_id"]');
-                if (compSelect.value) updateBadge(compSelect, `badge_comp_${rid}`);
-            });
-
-            modal.addEventListener('hidden.bs.modal', function () {
-                const form = this.querySelector('form');
-                if (form) {
-                    form.reset();
-                    const rid = this.id.replace('editRendicion', '');
-                    calcTotalEdit(rid);
-                    // Resetear los subtotales visuales de productos
-                    this.querySelectorAll('.prod-qty-input').forEach(inp => recalcProductLine(inp));
-                }
-            });
-        });
-    });
-
-    function validarNombresDiferentes(rendicionId) {
-        const workerSelect = document.querySelector(`select[name="worker_id"]`);
-        const companionSelect = document.querySelector(`select[name="companion_id"]`);
-        
-        if (companionSelect.value && workerSelect.value === companionSelect.value) {
-            alert("Error: El trabajador titular y el acompañante no pueden ser la misma persona.");
-            return false;
-        }
-        return true;
-    }
-
-    // Vincula esta validación al evento submit del formulario de edición
-    document.querySelectorAll('form[action*="edit_rendicion"]').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const workerSelect = this.querySelector('select[name="worker_id"]');
-            const companionSelect = this.querySelector('select[name="companion_id"]');
-            
-            if (companionSelect.value && workerSelect.value === companionSelect.value) {
-                e.preventDefault();
-                alert("Un trabajador no puede ser su propio acompañante. Por favor, corrige la selección.");
-            }
-        });
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const zonaSelect = document.getElementById('zonaSelect');
-        const moduloSelect = document.getElementById('moduloSelect');
-        const moduloOptions = Array.from(moduloSelect.options);
-
-        function filterModulos() {
-            const selectedZona = zonaSelect.value;
-            
-            moduloOptions.forEach(option => {
-                if (option.value === "") {
-                    // Siempre mostramos "Todos los Módulos"
-                    option.style.display = '';
-                } else if (!selectedZona || option.dataset.zona === selectedZona) {
-                    option.style.display = '';
-                } else {
-                    option.style.display = 'none';
-                    // Si el módulo seleccionado acaba de ocultarse, reseteamos el select
-                    if (option.selected) {
-                        moduloSelect.value = "";
-                    }
-                }
-            });
-        }
-
-        zonaSelect.addEventListener('change', filterModulos);
-        // Ejecutar al cargar la página por si ya viene con una zona filtrada
-        filterModulos();
-    });
-</script>
+<script src="{{ url_for('static', filename='js/admin_rendiciones.js') }}"></script>
 {% endblock %}

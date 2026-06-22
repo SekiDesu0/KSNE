@@ -1,11 +1,19 @@
+import os
 from flask import Flask
 from database import init_db
-from routes_auth import register_auth_routes
-from routes_worker import register_worker_routes
-from routes_admin import register_admin_routes
+from models.models import db
+from routes.auth_bp import auth_bp
+from routes.worker_bp import worker_bp
+from routes.admin_bp import admin_bp
 
 app = Flask(__name__)
 app.secret_key = "super_secret_dev_key"
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "db", "rendiciones.db")}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
 
 @app.after_request
 def add_header(response):
@@ -14,9 +22,9 @@ def add_header(response):
     response.headers["Expires"] = "0"
     return response
 
-register_auth_routes(app)
-register_worker_routes(app)
-register_admin_routes(app)
+app.register_blueprint(auth_bp)
+app.register_blueprint(worker_bp)
+app.register_blueprint(admin_bp)
 
 if __name__ == '__main__':
     init_db()

@@ -1,35 +1,13 @@
 {% extends "macros/base.html" %}
 {% from "macros/modals.html" import report_filters %}
+{% from "macros/ui.html" import back_link %}
 
 {% block title %}Reporte: Finanzas - {{ modulo_name }}{% endblock %}
-
-{% block styles %}
-<style>
-    .numeric-cell {
-        text-align: right;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: 500;
-    }
-    .total-column {
-        font-weight: bold;
-        background-color: #e9ecef !important;
-    }
-    .sticky-col {
-        position: sticky;
-        left: 0;
-        z-index: 10;
-        background-color: #f8f9fa !important;
-        border-right: 2px solid #dee2e6;
-    }
-</style>
-{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-<a href="{{ url_for('admin_reportes_index') }}" class="btn btn-outline-secondary btn-sm mb-2">
-        <i class="bi bi-arrow-left"></i> Volver al Menú
-        </a>
+        {{ back_link(url_for('admin.admin_reportes_index'), 'Volver al Menú') }}
         <h2>Resumen Financiero y Medios de Pago</h2>
     </div>
     <div class="text-end">
@@ -74,7 +52,7 @@
 </div>
 
 {{ report_filters(
-    url_for('report_modulo_periodo', modulo_id=modulo_id),
+    url_for('admin.report_modulo_periodo', modulo_id=modulo_id),
     workers_list,
     worker_actual,
     dia_actual,

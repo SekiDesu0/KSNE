@@ -43,7 +43,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('index'))
+            return redirect(url_for('auth.index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -52,7 +52,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session or not session.get('is_admin'):
             flash("Acceso denegado. Se requieren permisos de administrador.", "danger")
-            return redirect(url_for('index'))
+            return redirect(url_for('auth.index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -64,23 +64,3 @@ def get_report_params():
         dia = request.args.get('dia')
         worker_id = request.args.get('worker_id')
         return anio, mes, dia, worker_id
-
-def get_common_report_data(c, modulo_id):
-    """Obtiene nombre del módulo y lista de trabajadores para los filtros."""
-    c.execute("SELECT name FROM modulos WHERE id = ?", (modulo_id,))
-    modulo_info = c.fetchone()
-    
-    c.execute('''
-        SELECT DISTINCT w.id, w.name 
-        FROM workers w 
-        WHERE w.modulo_id = ? AND w.is_admin = 0
-        ORDER BY w.name
-    ''', (modulo_id,))
-    workers = c.fetchall()
-    
-    c.execute("SELECT DISTINCT strftime('%Y', fecha) as anio FROM rendiciones ORDER BY anio DESC")
-    anios = [row[0] for row in c.fetchall()]
-    if str(date.today().year) not in anios:
-        anios.insert(0, str(date.today().year))
-        
-    return modulo_info[0] if modulo_info else "Módulo", workers, anios

@@ -1,0 +1,36 @@
+.table-container {
+    max-height: 75vh;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: var(--bs-body-bg);
+    border-right: 2px solid var(--bs-border-color) !important;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--bs-body-bg);
+    box-shadow: inset 0 -1px 0 var(--bs-border-color);
+}
+
+thead th.sticky-col {
+    z-index: 3;
+}
+
+.numeric-cell {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* .total-column: uses theme-aware secondary background
+   so the highlight is visible in both light and dark mode. */
+.total-column {
+    font-weight: bold;
+    background-color: var(--bs-secondary-bg) !important;
+}
