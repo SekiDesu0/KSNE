@@ -12,6 +12,7 @@ services:
     environment:
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
+      - TZ=America/Santiago
     volumes:
       - /home/shironeko/Documents/dockerVols/rendiciones/db:/app/db
       - /home/shironeko/Documents/dockerVols/rendiciones/static/cache:/app/static/cache

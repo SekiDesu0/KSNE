@@ -386,9 +386,10 @@ def delete_product(id):
 @admin_bp.route('/productos/precios/<int:id>', methods=['POST'])
 @admin_required
 def update_product_prices(id):
-    fecha_input = request.form.get('fecha_activacion')
-    if fecha_input:
-        fecha_activacion = datetime.strptime(fecha_input, '%Y-%m-%dT%H:%M').replace(second=0)
+    fecha_date = request.form.get('fecha_activacion_date')
+    fecha_time = request.form.get('fecha_activacion_time') or '00:00'
+    if fecha_date:
+        fecha_activacion = datetime.strptime(f"{fecha_date} {fecha_time}", '%Y-%m-%d %H:%M').replace(second=0)
     else:
         fecha_activacion = datetime.now()
 
