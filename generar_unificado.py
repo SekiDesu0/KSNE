@@ -35,28 +35,38 @@ def generar_historico_definitivo(dias_atras=180):
             nombre_falso = f"Trabajador {i+1} ({mod_name})"
             phone_falso = f"+56 9 8888 {mod_id:02d}{i:02d}"
 
+            banco = random.choice(["Banco Estado", "Banco de Chile", "Banco Falabella", "Santander", "BCI", "Scotiabank"])
             workers_data.append((
                 rut_falso, nombre_falso, phone_falso,
-                default_pass, 0, mod_id, tipos[i]
+                default_pass, 0, mod_id, tipos[i],
+                banco, f"{random.randint(10000000, 99999999)}", random.choice(["Cuenta Corriente", "Cuenta Vista", "Cuenta Rut"]),
+                f"{random.randint(10000000, 99999999)}-{random.choice('0123456789K')}",
             ))
 
     c.executemany('''INSERT OR IGNORE INTO workers 
-                     (rut, name, phone, password_hash, is_admin, modulo_id, tipo) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?)''', workers_data)
+                     (rut, name, phone, password_hash, is_admin, modulo_id, tipo,
+                      nombre_banco, numero_cuenta, tipo_cuenta, rut_banco)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', workers_data)
     conn.commit()
 
     # 3. PREPARACIÓN DE DATOS
-    c.execute("SELECT id, modulo_id FROM workers WHERE is_admin = 0")
+    c.execute("SELECT id, modulo_id, tipo FROM workers WHERE is_admin = 0")
     all_workers_data = c.fetchall()
     todos_los_trabajadores = [w[0] for w in all_workers_data]
-    
+    workers_tipo = {w[0]: w[2] for w in all_workers_data}
+
     trabajadores_por_modulo = {}
-    for w_id, m_id in all_workers_data:
+    for w_id, m_id, _ in all_workers_data:
         if m_id not in trabajadores_por_modulo:
             trabajadores_por_modulo[m_id] = []
         trabajadores_por_modulo[m_id].append(w_id)
 
-    c.execute("SELECT id, price, commission FROM productos")
+    c.execute("""
+        SELECT p.id, ph.price, ph.commission
+        FROM productos p
+        JOIN precios_historicos ph ON p.id = ph.producto_id
+        GROUP BY p.id
+    """)
     productos = c.fetchall()
 
     # 4. VIAJE EN EL TIEMPO
@@ -104,15 +114,21 @@ def generar_historico_definitivo(dias_atras=180):
                 else:
                     hora_entrada = f"{random.randint(13, 15):02d}:{random.choice(['00', '30'])}"
                     hora_salida = f"{random.randint(19, 21):02d}:{random.choice(['00', '30'])}"
-                
+
+                worker_tipo = workers_tipo.get(worker_id, "Part Time")
+                worker_comision = 1 if worker_tipo == "Full Time" else random.choice([0, 1])
+
                 # Acompañante (70%)
                 companion_id = None
                 comp_in, comp_out = None, None
+                companion_comision = 0
                 if random.random() < 0.70:
                     posibles_comp = [w for w in todos_los_trabajadores if w != worker_id]
                     if posibles_comp:
                         companion_id = random.choice(posibles_comp)
                         comp_in, comp_out = hora_entrada, hora_salida
+                        comp_tipo = workers_tipo.get(companion_id, "Part Time")
+                        companion_comision = 1 if comp_tipo == "Full Time" else random.choice([0, 1])
                 
                 num_prods = random.randint(1, 5)
                 prods_elegidos = random.sample(productos, min(num_prods, len(productos)))
@@ -155,16 +171,19 @@ def generar_historico_definitivo(dias_atras=180):
 
                 c.execute('''
                     INSERT INTO rendiciones 
-                    (worker_id, companion_id, modulo_id, fecha, hora_entrada, hora_salida, 
-                     companion_hora_entrada, companion_hora_salida, 
+                    (worker_id, worker_comision, companion_id, modulo_id, fecha,
+                     hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
+                     companion_comision,
                      venta_debito, venta_credito, venta_mp, venta_efectivo,
                      boletas_debito, boletas_credito, boletas_mp, boletas_efectivo,
-                     gastos, observaciones, worker_comision, companion_comision)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
-                ''', (worker_id, companion_id, modulo_id, fecha_str, hora_entrada, hora_salida,
-                      comp_in, comp_out, debito, credito, mp, efectivo,
-                      b_debito, b_credito, b_mp, b_efectivo, 
-                      gastos, tipo_registro, 1 if companion_id else 0))
+                     gastos, observaciones)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (worker_id, worker_comision, companion_id, modulo_id, fecha_str,
+                      hora_entrada, hora_salida, comp_in, comp_out,
+                      companion_comision,
+                      debito, credito, mp, efectivo,
+                      b_debito, b_credito, b_mp, b_efectivo,
+                      gastos, tipo_registro))
                 
                 r_id = c.lastrowid
                 

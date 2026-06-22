@@ -1,3 +1,9 @@
+function toggleOtroBanco(selectEl, wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    wrapper.style.display = selectEl.value === '__otro__' ? '' : 'none';
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const editWorkerModal = document.getElementById('editWorkerModal');
     const confirmResetModal = document.getElementById('confirmResetPass');
@@ -26,6 +32,24 @@ document.addEventListener("DOMContentLoaded", function () {
             editWorkerModal.querySelector('#edit_worker_phone').value = button.getAttribute('data-phone');
             editWorkerModal.querySelector('#edit_worker_modulo').value = button.getAttribute('data-modulo');
             editWorkerModal.querySelector('#edit_worker_tipo').value = button.getAttribute('data-tipo');
+            const bancoVal = button.getAttribute('data-nombre-banco');
+            const bancoSelect = editWorkerModal.querySelector('#edit_worker_nombre_banco');
+            const otroWrapper = editWorkerModal.querySelector('#edit_otro_banco_wrapper');
+            const otroInput = editWorkerModal.querySelector('#edit_worker_nombre_banco_otro');
+
+            const isCustom = bancoVal && !Array.from(bancoSelect.options).some(o => o.value === bancoVal);
+            if (isCustom) {
+                bancoSelect.value = '__otro__';
+                otroWrapper.style.display = '';
+                otroInput.value = bancoVal;
+            } else {
+                bancoSelect.value = bancoVal;
+                otroWrapper.style.display = 'none';
+                otroInput.value = '';
+            }
+            editWorkerModal.querySelector('#edit_worker_numero_cuenta').value = button.getAttribute('data-numero-cuenta');
+            editWorkerModal.querySelector('#edit_worker_rut_banco').value = button.getAttribute('data-rut-banco');
+            editWorkerModal.querySelector('#edit_worker_tipo_cuenta').value = button.getAttribute('data-tipo-cuenta');
         });
     }
 
@@ -46,8 +70,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (rutInput) {
         window.formatHelpers.bindRutInput('#rutInput');
     }
+    const addRutInput = document.getElementById('addRutInput');
+    if (addRutInput) {
+        window.formatHelpers.bindRutInput('#addRutInput');
+    }
 
-    window.formatHelpers.bindPhoneInput('.phone-input, #phoneInput');
+    window.formatHelpers.bindPhoneInput('.phone-input, #phoneInput, #addPhoneInput');
 
     const searchInputWorker = document.getElementById('searchWorker');
     const moduleSelectFilter = document.getElementById('filterModule');

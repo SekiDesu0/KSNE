@@ -17,6 +17,20 @@ from services import report_service, rendiciones_service
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+BANCOS = [
+    "Banco Estado", "Banco de Chile", "Banco Falabella", "BCI Nova",
+    "Banco Bice", "Banco Consorcio", "Banco Security", "Banefe",
+    "Coopeuch", "Corpbanca", "Multicaja", "Ahorrocoop",
+    "BBVA Chile", "Banco Condell", "Banco Do Brasil S.A.",
+    "Banco Edwards Citi", "Banco Internacional", "Banco Itaú Chile",
+    "Banco París", "Banco Penta", "Banco Ripley",
+    "Banco Santander Chile", "Banco de Crédito e Inversiones - BCI",
+    "Banco de la Nación Argentina", "Caputal", "Coocretal",
+    "Credichile Atlas", "DNB Bank ASA", "Detacoop",
+    "Oriencoop", "RABOBANK CHILE", "Scotiabank Chile",
+    "Servipag Express", "THE BANK OF TOKYO-MITSUBISHI UFJ, LTD.",
+]
+
 
 # ============================================================
 # WORKERS
@@ -47,9 +61,17 @@ def manage_workers():
             password = generate_random_password()
             p_hash = generate_password_hash(password)
 
+            nombre_banco = request.form.get('nombre_banco', '')
+            if nombre_banco == '__otro__':
+                nombre_banco = request.form.get('nombre_banco_otro', '')
+
             new_worker = Worker(
                 rut=rut, name=name, phone=phone, password_hash=p_hash,
                 is_admin=False, modulo_id=int(modulo_id), tipo=tipo,
+                nombre_banco=nombre_banco,
+                numero_cuenta=request.form.get('numero_cuenta', ''),
+                tipo_cuenta=request.form.get('tipo_cuenta', ''),
+                rut_banco=request.form.get('rut_banco', ''),
             )
             try:
                 db.session.add(new_worker)
@@ -69,7 +91,8 @@ def manage_workers():
         .all()
     )
     workers = [
-        (w.id, w.rut, w.name, w.phone, m.name if m else None, w.modulo_id, w.tipo)
+        (w.id, w.rut, w.name, w.phone, m.name if m else None, w.modulo_id, w.tipo,
+         w.nombre_banco or '', w.numero_cuenta or '', w.tipo_cuenta or '', w.rut_banco or '')
         for w, m in workers_rows
     ]
 
@@ -81,7 +104,7 @@ def manage_workers():
     )
     modulos = [(m.id, m.name, z.name) for m, z in modulos_rows]
 
-    return render_template('admin_workers.html', workers=workers, form=form_data, modulos=modulos)
+    return render_template('admin_workers.html', workers=workers, form=form_data, modulos=modulos, bancos=BANCOS)
 
 
 @admin_bp.route('/workers/edit/<int:id>', methods=['GET', 'POST'])
@@ -108,6 +131,13 @@ def edit_worker(id):
         worker.phone = format_phone(raw_phone)
         worker.modulo_id = int(modulo_id)
         worker.tipo = tipo
+        nombre_banco = request.form.get('nombre_banco', '')
+        if nombre_banco == '__otro__':
+            nombre_banco = request.form.get('nombre_banco_otro', '')
+        worker.nombre_banco = nombre_banco
+        worker.numero_cuenta = request.form.get('numero_cuenta', '')
+        worker.tipo_cuenta = request.form.get('tipo_cuenta', '')
+        worker.rut_banco = request.form.get('rut_banco', '')
 
         db.session.commit()
         flash("Trabajador actualizado exitosamente.", "success")
@@ -126,8 +156,10 @@ def edit_worker(id):
     if not worker:
         return redirect(url_for('admin.manage_workers'))
 
-    worker_tuple = (worker.id, worker.rut, worker.name, worker.phone, worker.modulo_id)
-    return render_template('edit_worker.html', worker=worker_tuple, modulos=modulos)
+    worker_tuple = (worker.id, worker.rut, worker.name, worker.phone, worker.modulo_id,
+                    worker.nombre_banco or '', worker.numero_cuenta or '', worker.tipo_cuenta or '',
+                    worker.rut_banco or '')
+    return render_template('edit_worker.html', worker=worker_tuple, modulos=modulos, bancos=BANCOS)
 
 
 @admin_bp.route('/workers/delete/<int:id>', methods=['POST'])
@@ -411,40 +443,28 @@ def api_product_history(id):
 @admin_bp.route('/rendiciones')
 @admin_required
 def admin_rendiciones():
-    mes_seleccionado = request.args.get('mes')
-    anio_seleccionado = request.args.get('anio')
-    dia_seleccionado = request.args.get('dia')
+    hoy = date.today()
+    fecha_inicio = request.args.get('fecha_inicio', f"{hoy.year}-{hoy.month:02d}-01")
+    fecha_fin = request.args.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
     zona_id_seleccionada = request.args.get('zona_id')
     modulo_id_seleccionado = request.args.get('modulo_id')
 
-    if request.args.get('mes') is None:
-        hoy = date.today()
-        mes_seleccionado = f"{hoy.month:02d}"
-        anio_seleccionado = str(hoy.year)
-        dia_seleccionado = f"{hoy.day:02d}"
-
-    mes_seleccionado = mes_seleccionado.zfill(2)
-
     rendiciones_completas = rendiciones_service.get_filtered_rendiciones(
-        mes_seleccionado, anio_seleccionado, dia_seleccionado,
+        fecha_inicio, fecha_fin,
         zona_id_seleccionada, modulo_id_seleccionado,
     )
     workers, modulos, zonas, anios_disponibles = rendiciones_service.get_filter_catalogs()
-
-    dias_disponibles = [f"{d:02d}" for d in range(1, 32)]
 
     return render_template('admin_rendiciones.html',
                            rendiciones=rendiciones_completas,
                            workers=workers,
                            modulos=modulos,
                            zonas=zonas,
-                           mes_actual=mes_seleccionado,
-                           anio_actual=anio_seleccionado,
-                           dia_actual=dia_seleccionado,
+                           fecha_inicio=fecha_inicio,
+                           fecha_fin=fecha_fin,
                            zona_actual=zona_id_seleccionada,
                            modulo_actual=modulo_id_seleccionado,
-                           anios_disponibles=anios_disponibles,
-                           dias_disponibles=dias_disponibles)
+                           anios_disponibles=anios_disponibles)
 
 
 @admin_bp.route('/rendiciones/delete/<int:id>', methods=['POST'])
@@ -549,87 +569,87 @@ def admin_reportes_index():
 @admin_bp.route('/reportes/modulo/<int:modulo_id>')
 @admin_required
 def report_modulo_periodo(modulo_id):
-    anio, mes, dia_f, worker_id = get_report_params()
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
     mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
-    data = report_service.get_modulo_periodo_data(modulo_id, anio, mes, dia_f, worker_id)
+    data = report_service.get_modulo_periodo_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
 
     return render_template('admin_report_modulo.html',
                            modulo_name=mod_name, modulo_id=modulo_id,
-                           mes_nombre=f"{mes}/{anio}",
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
                            dias_en_periodo=data['dias_en_periodo'],
                            data_por_dia=data['data_por_dia'],
                            totales_mes=data['totales_mes'],
                            dias_activos=data['dias_activos'],
                            workers_list=workers_list, worker_actual=worker_id,
-                           dia_actual=dia_f, mes_actual=mes, anio_actual=anio,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>/comisiones')
 @admin_required
 def report_modulo_comisiones(modulo_id):
-    anio, mes, dia_f, worker_id = get_report_params()
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
     mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
-    data = report_service.get_comisiones_data(modulo_id, anio, mes, dia_f, worker_id)
+    data = report_service.get_comisiones_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
 
     return render_template('admin_report_comisiones.html',
                            modulo_name=mod_name, modulo_id=modulo_id,
-                           mes_nombre=f"{mes}/{anio}",
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
                            workers_data=data['workers_data'],
                            dias_en_periodo=data['dias_en_periodo'],
                            workers_list=workers_list, worker_actual=worker_id,
-                           dia_actual=dia_f, mes_actual=mes, anio_actual=anio,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>/horarios')
 @admin_required
 def report_modulo_horarios(modulo_id):
-    anio, mes, dia_f, worker_id = get_report_params()
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
     mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
-    data = report_service.get_horarios_data(modulo_id, anio, mes, dia_f, worker_id)
+    data = report_service.get_horarios_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
 
     return render_template('admin_report_horarios.html',
                            modulo_name=mod_name, modulo_id=modulo_id,
-                           mes_nombre=f"{mes}/{anio}",
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
                            workers_data=data['workers_data'],
                            dias_en_periodo=data['dias_en_periodo'],
                            workers_list=workers_list, worker_actual=worker_id,
-                           dia_actual=dia_f, mes_actual=mes, anio_actual=anio,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>/centros_comerciales')
 @admin_required
 def report_modulo_centros_comerciales(modulo_id):
-    anio, mes, dia_f, worker_id = get_report_params()
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
     mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
-    data = report_service.get_cc_data(modulo_id, anio, mes, dia_f, worker_id)
+    data = report_service.get_cc_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
 
     return render_template('admin_report_cc.html',
                            modulo_name=mod_name, modulo_id=modulo_id,
-                           mes_nombre=f"{mes}/{anio}",
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
                            dias_en_periodo=data['dias_en_periodo'],
                            data_por_dia=data['data_por_dia'],
                            totales=data['totales'],
                            workers_list=workers_list, worker_actual=worker_id,
-                           dia_actual=dia_f, mes_actual=mes, anio_actual=anio,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>/calculo_iva')
 @admin_required
 def report_modulo_calculo_iva(modulo_id):
-    anio, mes, dia_f, worker_id = get_report_params()
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
     mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
-    data = report_service.get_iva_data(modulo_id, anio, mes, dia_f, worker_id)
+    data = report_service.get_iva_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
 
     return render_template('admin_report_iva.html',
                            modulo_name=mod_name, modulo_id=modulo_id,
-                           mes_nombre=f"{mes}/{anio}",
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
                            dias_en_periodo=data['dias_en_periodo'],
                            data_por_dia=data['data_por_dia'],
                            totales=data['totales'],
                            workers_list=workers_list, worker_actual=worker_id,
-                           dia_actual=dia_f, mes_actual=mes, anio_actual=anio,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)

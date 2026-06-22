@@ -59,8 +59,7 @@ def admin_required(f):
 def get_report_params():
         """Captura filtros de la URL o establece valores por defecto."""
         hoy = date.today()
-        anio = request.args.get('anio', str(hoy.year))
-        mes = request.args.get('mes', f"{hoy.month:02d}")
-        dia = request.args.get('dia')
+        fecha_inicio = request.args.get('fecha_inicio', f"{hoy.year}-{hoy.month:02d}-01")
+        fecha_fin = request.args.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
         worker_id = request.args.get('worker_id')
-        return anio, mes, dia, worker_id
+        return fecha_inicio, fecha_fin, worker_id

@@ -16,14 +16,11 @@
     </div>
 </div>
 {{ report_filters(
-    url_for('admin.report_modulo_periodo', modulo_id=modulo_id),
+    url_for('admin.report_modulo_calculo_iva', modulo_id=modulo_id),
     workers_list,
     worker_actual,
-    dia_actual,
-    [('01','Ene'),('02','Feb'),('03','Mar'),('04','Abr'),('05','May'),('06','Jun'),('07','Jul'),('08','Ago'),('09','Sep'),('10','Oct'),('11','Nov'),('12','Dic')],
-    mes_actual,
-    anios_disponibles,
-    anio_actual
+    fecha_inicio,
+    fecha_fin
 ) }}
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">

@@ -25,15 +25,17 @@ def get_filter_catalogs():
     return workers, modulos, zonas, anios_disponibles
 
 
-def get_filtered_rendiciones(mes, anio, dia, zona_id, modulo_id):
+def get_filtered_rendiciones(fecha_inicio, fecha_fin, zona_id, modulo_id):
+    from datetime import datetime
+    inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+    fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+
     Companion = aliased(Worker)
 
     filters = [
-        func.strftime('%m', Rendicion.fecha) == mes,
-        func.strftime('%Y', Rendicion.fecha) == anio,
+        Rendicion.fecha >= inicio,
+        Rendicion.fecha <= fin,
     ]
-    if dia:
-        filters.append(func.strftime('%d', Rendicion.fecha) == dia.zfill(2))
     if zona_id:
         filters.append(Modulo.zona_id == zona_id)
     if modulo_id:

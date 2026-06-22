@@ -276,6 +276,13 @@ def init_db():
                   FOREIGN KEY (rendicion_id) REFERENCES rendiciones(id),
                   FOREIGN KEY (producto_id) REFERENCES productos(id))''')
     
+    # Migrate: add bank fields if missing
+    for col in ['nombre_banco', 'numero_cuenta', 'tipo_cuenta', 'rut_banco']:
+        try:
+            c.execute(f"ALTER TABLE workers ADD COLUMN {col} TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+
     c.execute("SELECT id FROM workers WHERE is_admin = 1")
     if not c.fetchone():
         admin_pass = generate_password_hash("admin123")

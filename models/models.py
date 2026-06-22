@@ -55,6 +55,10 @@ class Worker(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     modulo_id = db.Column(db.Integer, db.ForeignKey('modulos.id'))
     tipo = db.Column(db.String, default='Full Time')
+    nombre_banco = db.Column(db.String, default='')
+    numero_cuenta = db.Column(db.String, default='')
+    tipo_cuenta = db.Column(db.String, default='')
+    rut_banco = db.Column(db.String, default='')
 
 
 class Rendicion(db.Model):

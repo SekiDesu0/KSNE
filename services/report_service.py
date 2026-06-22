@@ -1,5 +1,4 @@
-import calendar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from models.models import db, Modulo, Worker, Rendicion, RendicionItem
@@ -9,26 +8,33 @@ Companion = aliased(Worker, name='companion')
 WEEKDAY_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
 
-def _fecha_filters(anio, mes, dia_f):
+def _parse_date(date_str):
+    return datetime.strptime(date_str, '%Y-%m-%d').date()
+
+
+def _fecha_filters(fecha_inicio, fecha_fin):
     filters = [
-        func.strftime('%m', Rendicion.fecha) == mes,
-        func.strftime('%Y', Rendicion.fecha) == anio,
+        Rendicion.fecha >= _parse_date(fecha_inicio),
+        Rendicion.fecha <= _parse_date(fecha_fin),
     ]
-    if dia_f:
-        filters.append(func.strftime('%d', Rendicion.fecha) == dia_f.zfill(2))
     return filters
 
 
-def _dias_en_periodo(anio, mes):
-    _, num_dias = calendar.monthrange(int(anio), int(mes))
-    return [f'{d:02d}' for d in range(1, num_dias + 1)]
+def _dias_en_periodo(fecha_inicio, fecha_fin):
+    inicio = _parse_date(fecha_inicio)
+    fin = _parse_date(fecha_fin)
+    if inicio > fin:
+        inicio, fin = fin, inicio
+    return [f'{(inicio + timedelta(days=i)).strftime("%d")}' for i in range((fin - inicio).days + 1)]
 
 
-def _dias_con_nombre(anio, mes):
-    _, num_dias = calendar.monthrange(int(anio), int(mes))
+def _dias_con_nombre(fecha_inicio, fecha_fin):
+    inicio = _parse_date(fecha_inicio)
+    fin = _parse_date(fecha_fin)
     return [
-        {'num': f'{d:02d}', 'name': WEEKDAY_SHORT[date(int(anio), int(mes), d).weekday()]}
-        for d in range(1, num_dias + 1)
+        {'num': (inicio + timedelta(days=i)).strftime('%d'),
+         'name': WEEKDAY_SHORT[(inicio + timedelta(days=i)).weekday()]}
+        for i in range((fin - inicio).days + 1)
     ]
 
 
@@ -64,10 +70,10 @@ def _calcular_horas(hora_in, hora_out):
         return 0, "0:00"
 
 
-def get_modulo_periodo_data(modulo_id, anio, mes, dia_f, worker_id):
+def get_modulo_periodo_data(modulo_id, fecha_inicio, fecha_fin, worker_id):
     filters = [
         Rendicion.modulo_id == modulo_id,
-        *_fecha_filters(anio, mes, dia_f),
+        *_fecha_filters(fecha_inicio, fecha_fin),
     ]
     if worker_id:
         filters.append(Rendicion.worker_id == worker_id)
@@ -92,7 +98,7 @@ def get_modulo_periodo_data(modulo_id, anio, mes, dia_f, worker_id):
     ).group_by('dia').all()
     comisiones = {row[0]: row[1] for row in comisiones_rows}
 
-    dias_en_periodo = _dias_en_periodo(anio, mes)
+    dias_en_periodo = _dias_en_periodo(fecha_inicio, fecha_fin)
     data_por_dia = {d: {
         'debito': 0, 'credito': 0, 'mp': 0, 'efectivo': 0,
         'gastos': 0, 'comision': 0, 'venta_total': 0,
@@ -109,7 +115,7 @@ def get_modulo_periodo_data(modulo_id, anio, mes, dia_f, worker_id):
             'gastos': gastos, 'venta_total': vt, 'comision': comisiones.get(d, 0),
         }
 
-    totales_mes = {k: sum(d[k] for d in data_por_dia.values()) for k in data_por_dia['01']}
+    totales_mes = {k: sum(d[k] for d in data_por_dia.values()) for k in (next(iter(data_por_dia.values()), {})).keys()}
     dias_activos = sum(1 for d in data_por_dia.values() if d['venta_total'] > 0)
 
     return {
@@ -120,10 +126,10 @@ def get_modulo_periodo_data(modulo_id, anio, mes, dia_f, worker_id):
     }
 
 
-def get_comisiones_data(modulo_id, anio, mes, dia_f, worker_id):
+def get_comisiones_data(modulo_id, fecha_inicio, fecha_fin, worker_id):
     filters = [
         Rendicion.modulo_id == modulo_id,
-        *_fecha_filters(anio, mes, dia_f),
+        *_fecha_filters(fecha_inicio, fecha_fin),
     ]
     if worker_id:
         filters.append(db.or_(Rendicion.worker_id == worker_id, Rendicion.companion_id == worker_id))
@@ -166,14 +172,14 @@ def get_comisiones_data(modulo_id, anio, mes, dia_f, worker_id):
 
     return {
         'workers_data': dict(sorted(workers_data.items(), key=lambda x: x[1]['name'])),
-        'dias_en_periodo': _dias_en_periodo(anio, mes),
+        'dias_en_periodo': _dias_en_periodo(fecha_inicio, fecha_fin),
     }
 
 
-def get_horarios_data(modulo_id, anio, mes, dia_f, worker_id):
+def get_horarios_data(modulo_id, fecha_inicio, fecha_fin, worker_id):
     filters = [
         Rendicion.modulo_id == modulo_id,
-        *_fecha_filters(anio, mes, dia_f),
+        *_fecha_filters(fecha_inicio, fecha_fin),
     ]
     if worker_id:
         filters.append(db.or_(Rendicion.worker_id == worker_id, Rendicion.companion_id == worker_id))
@@ -212,14 +218,14 @@ def get_horarios_data(modulo_id, anio, mes, dia_f, worker_id):
 
     return {
         'workers_data': workers_data,
-        'dias_en_periodo': _dias_con_nombre(anio, mes),
+        'dias_en_periodo': _dias_con_nombre(fecha_inicio, fecha_fin),
     }
 
 
-def get_cc_data(modulo_id, anio, mes, dia_f, worker_id):
+def get_cc_data(modulo_id, fecha_inicio, fecha_fin, worker_id):
     filters = [
         Rendicion.modulo_id == modulo_id,
-        *_fecha_filters(anio, mes, dia_f),
+        *_fecha_filters(fecha_inicio, fecha_fin),
     ]
     if worker_id:
         filters.append(Rendicion.worker_id == worker_id)
@@ -231,7 +237,7 @@ def get_cc_data(modulo_id, anio, mes, dia_f, worker_id):
         func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo),
     ).filter(*filters).group_by('dia').all()
 
-    dias_en_periodo = _dias_en_periodo(anio, mes)
+    dias_en_periodo = _dias_en_periodo(fecha_inicio, fecha_fin)
     data_por_dia = {d: {'red_compra': 0, 'efectivo': 0, 'total_trans': 0, 'venta_neta': 0} for d in dias_en_periodo}
     totales = {'red_compra': 0, 'efectivo': 0, 'total_trans': 0, 'venta_neta': 0}
 
@@ -246,16 +252,16 @@ def get_cc_data(modulo_id, anio, mes, dia_f, worker_id):
             totales[k] += data_por_dia[dia][k]
 
     return {
-        'dias_en_periodo': _dias_con_nombre(anio, mes),
+        'dias_en_periodo': _dias_con_nombre(fecha_inicio, fecha_fin),
         'data_por_dia': data_por_dia,
         'totales': totales,
     }
 
 
-def get_iva_data(modulo_id, anio, mes, dia_f, worker_id):
+def get_iva_data(modulo_id, fecha_inicio, fecha_fin, worker_id):
     filters = [
         Rendicion.modulo_id == modulo_id,
-        *_fecha_filters(anio, mes, dia_f),
+        *_fecha_filters(fecha_inicio, fecha_fin),
     ]
     if worker_id:
         filters.append(Rendicion.worker_id == worker_id)
@@ -266,7 +272,7 @@ def get_iva_data(modulo_id, anio, mes, dia_f, worker_id):
         func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp),
     ).filter(*filters).group_by('dia').all()
 
-    dias_en_periodo = _dias_en_periodo(anio, mes)
+    dias_en_periodo = _dias_en_periodo(fecha_inicio, fecha_fin)
     data_por_dia = {d: {'efectivo': 0, 'tbk': 0, 'total': 0, 'porcentaje': 0} for d in dias_en_periodo}
     totales = {'efectivo': 0, 'tbk': 0, 'total': 0, 'porcentaje': 0}
 
@@ -287,7 +293,7 @@ def get_iva_data(modulo_id, anio, mes, dia_f, worker_id):
         totales['porcentaje'] = round((totales['efectivo'] / totales['total']) * 100)
 
     return {
-        'dias_en_periodo': _dias_con_nombre(anio, mes),
+        'dias_en_periodo': _dias_con_nombre(fecha_inicio, fecha_fin),
         'data_por_dia': data_por_dia,
         'totales': totales,
     }
