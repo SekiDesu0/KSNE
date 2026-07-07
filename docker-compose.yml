@@ -2,9 +2,6 @@ name: ksne
 
 services:
   ksne:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: ksne:latest
     container_name: ksne-server
     ports:

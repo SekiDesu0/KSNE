@@ -1,71 +1,63 @@
 # KSNE
 
-Key Sales & Net Earnings — Sistema de rendiciones, inventario y reportes para módulos retail.
+Key Sales & Net Earnings — Settlement, inventory and reporting system for retail modules.
 
-## Arquitectura
+## Architecture
 
 ### Stack
-- Flask 3.1 + SQLAlchemy 2.0
-- SQLite (persiste en volumen Docker)
+- Flask 3.1 + Flask-SQLAlchemy 2.0 (with raw sqlite3 for bootstrap/seed)
+- SQLite (persists in Docker volume)
+- gunicorn (production server)
 - Bootstrap 5.3 (dark mode, responsive)
-- openpyxl (exportación Excel)
+- openpyxl (Excel export)
 
-### Módulos
-- **Auth**: login/logout con RUT + contraseña
-- **Worker**: dashboard, rendiciones, reporte de robos y mermas
-- **Admin**: CRUD de workers, productos/precios, reportes con exportación Excel
+### Modules
+- **Auth**: login/logout with RUT + password
+- **Worker**: dashboard with settlement history, new settlement form (with products, companion, schedules), theft & shrinkage report
+- **Admin**: CRUD for workers (with bank details), zones/modules, products & per-zone scheduled prices, complementos (add-ons), rendiciones management, and multi-format reports with Excel export
 
-### Reportes disponibles
+### Available Reports
 
-| Reporte | Ruta | Excel |
+| Report | Route | Excel |
 |---|---|---|
-| Detalle de Ventas | `/reportes/modulo/<id>` | ✅ |
-| Centros Comerciales | `/reportes/modulo/<id>/centros_comerciales` | ✅ |
-| Control % Ventas Efectivo/Tarjetas | `/reportes/modulo/<id>/calculo_iva` | ✅ |
-| Robos y Mermas | `/reportes/modulo/<id>/robos_mermas` | ✅ |
-| Productos Vendidos y Complementos | `/reportes/modulo/<id>/productos_vendidos` | ✅ |
-| Comisiones | `/reportes/modulo/<id>/comisiones` | — |
-| Horarios | `/reportes/modulo/<id>/horarios` | — |
+| Sales Detail | `/admin/reportes/modulo/<id>` | ✅ |
+| Shopping Centers | `/admin/reportes/modulo/<id>/centros_comerciales` | ✅ |
+| Cash/Card Sales % Control | `/admin/reportes/modulo/<id>/calculo_iva` | ✅ |
+| Theft and Shrinkage | `/admin/reportes/modulo/<id>/robos_mermas` | ✅ |
+| Sold Products and Add-ons | `/admin/reportes/modulo/<id>/productos_vendidos` | ✅ |
+| Commissions | `/admin/reportes/modulo/<id>/comisiones` | — |
+| Schedules | `/admin/reportes/modulo/<id>/horarios` | — |
 
-### Complementos
-Cada producto puede tener complementos vinculados (ej. "Paño" con "ANTIPARRA MEDIANO").
-Al vender un producto, sus complementos se registran como egresos de inventario.
+### Complementos (Add-ons)
+Each product can have linked complementos (e.g. "PACK LENTES DE SOL 1" linked to "MEDIUM GOGGLE"). When a product is sold, its complementos are tracked as inventory outflows. The Sold Products report breaks down quantities by product sales, complementos delivered, and theft/shrinkage.
 
 ## Docker Deployment
 
-### Requisitos
+### Requirements
 - Docker + Docker Compose
-- Volúmenes persistentes en `/home/sekidesu/dockerVolumes/ksne/`
+- Persistent volumes at `/home/sekidesu/dockerVolumes/ksne/`
 
-### Deploy
-
-```bash
-./build-deploy.sh    # git pull + build + up
-
-# O paso a paso:
-docker compose up -d --build
-```
-
-La app estará disponible en `http://localhost:5500`.
-
-### Reiniciar datos de prueba
+### Build & Deploy
 
 ```bash
-docker exec -it ksne-server python generar_unificado.py
+docker build -t ksne:latest .
+docker compose up -d
 ```
 
-### Volúmenes
+The app will be available at `http://localhost:5500`.
 
-Los datos persistentes se almacenan fuera del contenedor:
+### Volumes
 
-| Ruta host | Ruta container | Propósito |
+Persistent data is stored outside the container:
+
+| Host path | Container path | Purpose |
 |---|---|---|
-| `/home/sekidesu/dockerVolumes/ksne/db` | `/app/db` | Base de datos SQLite |
-| `/home/sekidesu/dockerVolumes/ksne/static/cache` | `/app/static/cache` | Archivos cacheados |
+| `/home/sekidesu/dockerVolumes/ksne/db` | `/app/db` | SQLite database |
+| `/home/sekidesu/dockerVolumes/ksne/static/cache` | `/app/static/cache` | Cached files |
 
-## Credenciales por defecto
+## Default Credentials
 
-| Rol | RUT | Contraseña |
+| Role | RUT | Password |
 |---|---|---|
 | Admin | `1-9` | `admin123` |
 | Worker | `11.111.111-1` | `123456` |
@@ -73,9 +65,9 @@ Los datos persistentes se almacenan fuera del contenedor:
 # TODO
 
 ## General
-- [ ] Separar productos por tienda
-- [ ] Mostrar gráficos de ventas totales en el index
-- [ ] Mostrar ventas diarias por módulo/zona
+- [ ] Separate products by store
+- [ ] Show total sales charts on index
+- [ ] Show daily sales by module/zone
 - [ ] Fix colors in light/dark mode
 - [ ] Force password change on first login for workers
 - [ ] Clean up requirements.txt
