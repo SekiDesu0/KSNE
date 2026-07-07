@@ -32,3 +32,5 @@ generar_unificado.py
 docker-compose.yml
 Dockerfile
 .dockerignore
+
+graphify-out/

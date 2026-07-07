@@ -1,49 +1,84 @@
-# KSNE-Rendiciones-App
+# KSNE
+
+Key Sales & Net Earnings — Sistema de rendiciones, inventario y reportes para módulos retail.
+
+## Arquitectura
+
+### Stack
+- Flask 3.1 + SQLAlchemy 2.0
+- SQLite (persiste en volumen Docker)
+- Bootstrap 5.3 (dark mode, responsive)
+- openpyxl (exportación Excel)
+
+### Módulos
+- **Auth**: login/logout con RUT + contraseña
+- **Worker**: dashboard, rendiciones, reporte de robos y mermas
+- **Admin**: CRUD de workers, productos/precios, reportes con exportación Excel
+
+### Reportes disponibles
+
+| Reporte | Ruta | Excel |
+|---|---|---|
+| Detalle de Ventas | `/reportes/modulo/<id>` | ✅ |
+| Centros Comerciales | `/reportes/modulo/<id>/centros_comerciales` | ✅ |
+| Control % Ventas Efectivo/Tarjetas | `/reportes/modulo/<id>/calculo_iva` | ✅ |
+| Robos y Mermas | `/reportes/modulo/<id>/robos_mermas` | ✅ |
+| Productos Vendidos y Complementos | `/reportes/modulo/<id>/productos_vendidos` | ✅ |
+| Comisiones | `/reportes/modulo/<id>/comisiones` | — |
+| Horarios | `/reportes/modulo/<id>/horarios` | — |
+
+### Complementos
+Cada producto puede tener complementos vinculados (ej. "Paño" con "ANTIPARRA MEDIANO").
+Al vender un producto, sus complementos se registran como egresos de inventario.
 
 ## Docker Deployment
 
-Build and deploy the application:
+### Requisitos
+- Docker + Docker Compose
+- Volúmenes persistentes en `/home/sekidesu/dockerVolumes/ksne/`
+
+### Deploy
 
 ```bash
-./build-deploy.sh    # pulls latest code, builds image, starts container
+./build-deploy.sh    # git pull + build + up
 
-# Or step by step:
+# O paso a paso:
 docker compose up -d --build
 ```
 
-The app will be available at `http://localhost:5500`.
+La app estará disponible en `http://localhost:5500`.
 
-### Volumes
+### Reiniciar datos de prueba
 
-Persistent data is stored outside the container:
+```bash
+docker exec -it ksne-server python generar_unificado.py
+```
 
-| Host path | Container path | Purpose |
+### Volúmenes
+
+Los datos persistentes se almacenan fuera del contenedor:
+
+| Ruta host | Ruta container | Propósito |
 |---|---|---|
-| `./db` | `/app/db` | SQLite database |
-| `./static/cache` | `/app/static/cache` | Cached files |
+| `/home/sekidesu/dockerVolumes/ksne/db` | `/app/db` | Base de datos SQLite |
+| `/home/sekidesu/dockerVolumes/ksne/static/cache` | `/app/static/cache` | Archivos cacheados |
+
+## Credenciales por defecto
+
+| Rol | RUT | Contraseña |
+|---|---|---|
+| Admin | `1-9` | `admin123` |
+| Worker | `11.111.111-1` | `123456` |
 
 # TODO
-## Questions
-- [ ] Verify if shifts are fixed to set a schedule
-- [ ] Verify if max 2 people work per day
-- [ ] Understand how HC products/prices work
 
 ## General
-- [ ] Generate shopping center registry
-- [ ] Generate reports and export to Excel
-- [ ] Monthly sold products table
-- [ ] Stolen items form
-- [ ] Implement overtime?
-- [ ] Implement calendar like Excel
+- [ ] Separar productos por tienda
+- [ ] Mostrar gráficos de ventas totales en el index
+- [ ] Mostrar ventas diarias por módulo/zona
 - [ ] Fix colors in light/dark mode
-- [ ] Separate products by store
-- [ ] Clean up requirements.txt
-- [ ] Show total sales charts on index
-- [ ] Show daily sales by module/zone
-- [ ] Loss report form on dashboard
-- [ ] Product categories (complementos, etc)
-- [ ] Product pricing by zone
 - [ ] Force password change on first login for workers
+- [ ] Clean up requirements.txt
 
 ## Low Priority
 - [ ] Polish admin UI layout
