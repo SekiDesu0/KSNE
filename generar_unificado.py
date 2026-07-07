@@ -12,6 +12,7 @@ def generar_historico_definitivo(dias_atras=180):
     print("Limpiando datos de prueba anteriores...")
     c.execute("DELETE FROM rendicion_items")
     c.execute("DELETE FROM rendiciones")
+    c.execute("DELETE FROM robos_mermas")
     c.execute("DELETE FROM workers WHERE is_admin = 0")
     conn.commit()
 
@@ -87,6 +88,86 @@ def generar_historico_definitivo(dias_atras=180):
                      (producto_id, zona_id, price, commission, fecha_activacion)
                      VALUES (?, ?, ?, ?, ?)''', precios_historicos_extra)
     conn.commit()
+
+    # 2.6 CREACIÓN DE COMPLEMENTOS Y VÍNCULOS CON PRODUCTOS
+    print("Creando complementos y vinculándolos con productos...")
+    
+    # Lista de complementos según la planilla
+    complementos_nuevos = [
+        "LENTE SOL", "POLARIZADO", "ANTIPARRA GRAN", "ANTIPARRA MED", 
+        "ANTIPARRA PEQ", "FILTRO AZUL", "JOCKEY 2X", "ESTUCHE MODA",
+        "ESTUCHE CIERRE", "ESTUCHE LECTUR", "STRAP TELA", "STRAP DISEÑO",
+        "STRAP CUERO", "MP FUNDAS", "PIROS TALE", "BOLSA", "ETIQUETA"
+    ]
+    
+    # Crear complementos si no existen
+    complementos_map = {}  # name -> id
+    c.execute("SELECT id, name FROM complementos")
+    for row in c.fetchall():
+        complementos_map[row[1]] = row[0]
+    
+    for comp_name in complementos_nuevos:
+        if comp_name not in complementos_map:
+            c.execute("INSERT INTO complementos (name) VALUES (?)", (comp_name,))
+            complementos_map[comp_name] = c.lastrowid
+    
+    # Mapeo de productos a complementos según la planilla
+    # Formato: nombre_producto -> [(nombre_complemento, cantidad), ...]
+    producto_complementos_map = {
+        "PACK LENTES DE SOL 1 x": [("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES DE PANTALLA": [("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES DE SOL 2 x": [("MP FUNDAS", 2), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES DE SOL 3 x": [("MP FUNDAS", 3), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES + ESTUCHE BLANDO": [("ESTUCHE MODA", 1), ("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES + STRAP": [("STRAP DISEÑO", 1), ("STRAP CUERO", 1), ("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES 1 x POLARIZADO + ESTUCHE BLANDO+ KIT": [("POLARIZADO", 1), ("ESTUCHE MODA", 1), ("MP FUNDAS", 1), ("PIROS TALE", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES 2 x POLARIZADO + 2 ESTUCHE BLANDO+ KIT": [("POLARIZADO", 2), ("ESTUCHE MODA", 2), ("MP FUNDAS", 2), ("PIROS TALE", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES GRANDES ANTIPARRA CON LIGA": [("ANTIPARRA GRAN", 1), ("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "ANTIPARRA MEDIANO": [("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "ANTIPARRA PEQUEÑO": [("MP FUNDAS", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES DE GRADUACION": [("FILTRO AZUL", 1), ("ESTUCHE LECTUR", 1), ("PIROS TALE", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK LENTES FILTRO AZUL": [("JOCKEY 2X", 1), ("ESTUCHE MODA", 1), ("PIROS TALE", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "JOCKEY (2 X PROD. SELECCIONADO)": [("JOCKEY 2X", 2), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "ESTUCHES MODA": [("ESTUCHE MODA", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "ESTUCHES CIERRE": [("ESTUCHE CIERRE", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "ESTUCHE DE LECTURA": [("ESTUCHE LECTUR", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "STRAP TELA": [("STRAP TELA", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "STRAP DISEÑO": [("STRAP DISEÑO", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "STRAP CUERO": [("STRAP CUERO", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "LIMPIA CRISTAL + PAÑO": [("MP FUNDAS", 1), ("PIROS TALE", 1), ("BOLSA", 1), ("ETIQUETA", 1)],
+        "LENTE LED": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "PULSERAS": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "SUJETADORES PARA LENTES": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "CORREAS DE CARTERAS DELGADAS Y GRUESAS": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "ESTUCHE COLGANTE DE LENTES": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "COLGANTE DE CELULAR (PULSERA)": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "COLGANTE DE CELULAR (COLLAR)": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "PACK DUO DE COLGANTE DE CELULAR": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "JOCKEY, GORRAS, SOMBREROS, CUELLOS Y OTROS.": [("BOLSA", 1), ("ETIQUETA", 1)],
+        "CARTERAS ORDENADOR": [("BOLSA", 1), ("ETIQUETA", 1)],
+    }
+    
+    # Obtener IDs de productos
+    c.execute("SELECT id, name FROM productos")
+    productos_db = {row[1]: row[0] for row in c.fetchall()}
+    
+    # Insertar relaciones producto-complemento
+    vinculos_creados = 0
+    for prod_name, complementos_list in producto_complementos_map.items():
+        if prod_name in productos_db:
+            prod_id = productos_db[prod_name]
+            for comp_name, cantidad in complementos_list:
+                if comp_name in complementos_map:
+                    comp_id = complementos_map[comp_name]
+                    # Verificar si ya existe la relación
+                    c.execute("SELECT id FROM producto_complementos WHERE producto_id = ? AND complemento_id = ?", (prod_id, comp_id))
+                    if not c.fetchone():
+                        c.execute("INSERT INTO producto_complementos (producto_id, complemento_id, cantidad) VALUES (?, ?, ?)", (prod_id, comp_id, cantidad))
+                        vinculos_creados += 1
+    
+    conn.commit()
+    print(f"  - {len(complementos_nuevos)} complementos creados/verificados")
+    print(f"  - {vinculos_creados} vínculos producto-complemento creados")
 
     # 3. PREPARACIÓN DE DATOS
     c.execute("SELECT id, modulo_id, tipo FROM workers WHERE is_admin = 0")
@@ -252,8 +333,73 @@ def generar_historico_definitivo(dias_atras=180):
                 rendiciones_creadas += 1
 
     conn.commit()
-    conn.close()
     print(f"Éxito: Se inyectaron {rendiciones_creadas} rendiciones para TODOS los módulos.")
+
+    # 5. GENERACIÓN DE ROBOS Y MERMAS
+    print("Generando reportes de robos y mermas...")
+    
+    motivos_observaciones = [
+        "Producto encontrado dañado en estante",
+        "Cliente reportó producto faltante",
+        "Inventario no cuadra al cierre de turno",
+        "Producto extraviado durante transporte",
+        "Daño por manipulación incorrecta",
+        "Producto vencido o en mal estado",
+        "Pérdida no explicada en conteo",
+        ""  # Sin observaciones
+    ]
+    
+    robos_creados = 0
+    mermas_creados = 0
+    
+    for i in range(dias_atras + 1):
+        fecha_actual = fecha_inicio + timedelta(days=i)
+        fecha_str = fecha_actual.strftime('%Y-%m-%d')
+        
+        for modulo_id, mod_name in modulos:
+            workers_modulo = trabajadores_por_modulo.get(modulo_id, [])
+            if not workers_modulo:
+                continue
+            
+            # 8% de probabilidad de tener un reporte de robo/merma por día por módulo
+            if random.random() < 0.08:
+                worker_id = random.choice(workers_modulo)
+                
+                # Elegir 1-4 productos aleatorios
+                num_productos = random.randint(1, 4)
+                productos_afectados = random.sample(productos, min(num_productos, len(productos)))
+                
+                for prod in productos_afectados:
+                    p_id, p_price, p_comm = prod
+                    cantidad = random.randint(1, 5)
+                    
+                    # 40% robo, 60% merma
+                    motivo = "robo" if random.random() < 0.40 else "merma"
+                    
+                    # Observaciones (70% de probabilidad de tener observación)
+                    observaciones = random.choice(motivos_observaciones) if random.random() < 0.70 else ""
+                    
+                    c.execute('''
+                        INSERT INTO robos_mermas 
+                        (worker_id, modulo_id, fecha, producto_id, cantidad, motivo, observaciones)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (worker_id, modulo_id, fecha_str, p_id, cantidad, motivo, observaciones))
+                    
+                    if motivo == "robo":
+                        robos_creados += 1
+                    else:
+                        mermas_creados += 1
+    
+    conn.commit()
+    print(f"  - {robos_creados} registros de robos creados")
+    print(f"  - {mermas_creados} registros de mermas creados")
+
+    conn.close()
+    print(f"\n=== RESUMEN FINAL ===")
+    print(f"Rendiciones: {rendiciones_creadas}")
+    print(f"Robos: {robos_creados}")
+    print(f"Mermas: {mermas_creados}")
+    print(f"Total registros generados: {rendiciones_creadas + robos_creados + mermas_creados}")
 
 if __name__ == '__main__':
     generar_historico_definitivo(180)

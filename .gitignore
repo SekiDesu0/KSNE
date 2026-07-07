@@ -1,2 +1,5 @@
 docker-compose.yml
 __pycache__/
+.opencode
+graphify-out
+AGENTS.md

@@ -1,0 +1,121 @@
+{% extends "macros/base.html" %}
+{% from 'macros/modals.html' import confirm_modal, alert_modal %}
+{% from "macros/ui.html" import flashed_messages, back_link %}
+
+{% block title %}Reportar Robos y Mermas{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {{ back_link(url_for('worker.historial_robos_mermas'), 'Volver al Historial') }}
+        <h2>Reportar Robos y Mermas</h2>
+    </div>
+    <div class="text-end text-muted">
+        <div><strong>Módulo:</strong> <span class="badge bg-primary">{{ modulo_name }}</span></div>
+        <div><small>Zona: {{ zona_name }}</small></div>
+    </div>
+</div>
+
+{{ flashed_messages() }}
+
+<form method="POST">
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-danger text-white">Datos del Reporte</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Fecha del Incidente</label>
+                    <input type="date" class="form-control" name="fecha" value="{{ today }}" max="{{ today }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observaciones</label>
+                    <textarea class="form-control" name="observaciones" rows="1" placeholder="Detalles adicionales (opcional)"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-danger text-white">Productos Robados o Perdidos</div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio Actual</th>
+                        <th style="width: 120px;">Cantidad</th>
+                        <th style="width: 160px;">Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prod in productos %}
+                    <tr>
+                        <td class="align-middle">{{ prod[1] }}</td>
+                        <td class="align-middle text-muted">${{ "{:,.0f}".format(prod[2]).replace(',', '.') }}</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm rm-qty" name="qty_{{ prod[0] }}" min="0" placeholder="0" data-prod="{{ prod[0] }}">
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm rm-motivo" name="motivo_{{ prod[0] }}" data-prod="{{ prod[0] }}" disabled>
+                                <option value="robo">Robo</option>
+                                <option value="merma">Merma</option>
+                            </select>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            No hay productos configurados para esta zona.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button type="button" class="btn btn-danger w-100 py-3 mb-5" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+        <i class="bi bi-exclamation-triangle me-2"></i> Enviar Reporte
+    </button>
+</form>
+
+{{ confirm_modal(
+    id='confirmSubmitModal',
+    title='¿Enviar Reporte de Robos/Mermas?',
+    message='Asegúrate de que todas las cantidades y motivos sean correctos. Una vez enviado, no podrás editarlo.',
+    action_url='#',
+    btn_class='btn-danger',
+    btn_text='Sí, enviar reporte'
+) }}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.rm-qty').forEach(function(input) {
+    input.addEventListener('input', function() {
+        var prodId = this.dataset.prod;
+        var motivoSelect = document.querySelector('.rm-motivo[data-prod="' + prodId + '"]');
+        if (parseInt(this.value) > 0) {
+            motivoSelect.disabled = false;
+        } else {
+            motivoSelect.disabled = true;
+        }
+    });
+});
+
+const submitModal = document.getElementById('confirmSubmitModal');
+const mainForm = document.querySelector('form');
+
+if (submitModal && mainForm) {
+    const confirmBtn = submitModal.querySelector('button[type="submit"]');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            mainForm.submit();
+        });
+    }
+}
+</script>
+{% endblock %}

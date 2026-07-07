@@ -2,13 +2,13 @@
 {% from "macros/modals.html" import report_filters %}
 {% from "macros/ui.html" import back_link %}
 
-{% block title %}Reporte: Cálculo de IVA - {{ modulo_name }}{% endblock %}
+{% block title %}Reporte: Control % Ventas Efectivo y Tarjetas - {{ modulo_name }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         {{ back_link(url_for('admin.admin_reportes_index'), 'Volver al Menú') }}
-        <h2>Cálculo de IVA</h2>
+        <h2>Control % Ventas Efectivo y Tarjetas</h2>
     </div>
     <div class="text-end">
         <div><strong class="text-primary fs-5">{{ modulo_name }}</strong></div>
@@ -23,16 +23,32 @@
     fecha_fin
 ) }}
 <div class="card shadow-sm border-0">
+    <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center pb-0">
+        <span class="fw-bold text-muted text-uppercase">
+            <i class="bi bi-pie-chart-fill me-1"></i> Participación por Medio de Pago
+        </span>
+        <a class="btn btn-success btn-sm shadow-sm"
+           href="{{ url_for('admin.report_modulo_calculo_iva_exportar_excel',
+                            modulo_id=modulo_id, fecha_inicio=fecha_inicio,
+                            fecha_fin=fecha_fin, worker_id=worker_actual) }}">
+            <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar Excel (.xlsx)
+        </a>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive table-container custom-scrollbar">
             <table class="table table-bordered table-hover table-sm mb-0 text-center text-nowrap align-middle">
                 <thead>
                     <tr>
-                        <th class="sticky-col py-3 align-middle bg-dark text-white" style="width: 10%;">FECHA</th>
-                        <th class="py-3 bg-success text-white" style="width: 25%;">VENTA EFECTIVO</th>
-                        <th class="py-3 bg-info text-dark" style="width: 25%;">VENTA TBK</th>
-                        <th class="py-3 bg-primary text-white" style="width: 25%;">VENTA TOTAL</th>
-                        <th class="py-3 bg-warning text-dark text-end pe-4" style="width: 15%;">% PROMEDIO VTAS<br>EN EFECTIVO</th>
+                        <th class="sticky-col py-3 align-middle bg-dark text-white" style="width: 8%;">FECHA</th>
+                        <th class="py-3 bg-dark text-white" style="width: 10%;">VENTA TOTAL</th>
+                        <th class="py-3 bg-success text-white" style="width: 10%;">EFECTIVO</th>
+                        <th class="py-3 bg-success-subtle text-success" style="width: 8%;">% EF.</th>
+                        <th class="py-3 bg-info text-dark" style="width: 10%;">DÉBITO (TD)</th>
+                        <th class="py-3 bg-info-subtle text-info" style="width: 8%;">% TD</th>
+                        <th class="py-3 bg-warning text-dark" style="width: 10%;">CRÉDITO (TC)</th>
+                        <th class="py-3 bg-warning-subtle text-warning" style="width: 8%;">% TC</th>
+                        <th class="py-3 bg-primary text-white" style="width: 10%;">MERCADO PAGO</th>
+                        <th class="py-3 bg-primary-subtle text-primary" style="width: 8%;">% MP</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,20 +61,30 @@
                                 <span>{{ dia.num }}</span>
                             </div>
                         </td>
+                        <td class="numeric-cell bg-dark-subtle text-body fw-bold">${{ "{:,.0f}".format(d.total).replace(',', '.') }}</td>
                         <td class="numeric-cell bg-success-subtle text-success fw-bold">${{ "{:,.0f}".format(d.efectivo).replace(',', '.') }}</td>
-                        <td class="numeric-cell bg-info-subtle text-info fw-bold">${{ "{:,.0f}".format(d.tbk).replace(',', '.') }}</td>
-                        <td class="numeric-cell bg-primary-subtle text-primary fw-bold">${{ "{:,.0f}".format(d.total).replace(',', '.') }}</td>
-                        <td class="numeric-cell bg-warning-subtle text-warning fw-bold text-end pe-4">{{ d.porcentaje }}%</td>
+                        <td class="numeric-cell bg-success-subtle text-success fw-bold">{{ d.pct_efectivo }}%</td>
+                        <td class="numeric-cell bg-info-subtle text-info fw-bold">${{ "{:,.0f}".format(d.debito).replace(',', '.') }}</td>
+                        <td class="numeric-cell bg-info-subtle text-info fw-bold">{{ d.pct_debito }}%</td>
+                        <td class="numeric-cell bg-warning-subtle text-warning fw-bold">${{ "{:,.0f}".format(d.credito).replace(',', '.') }}</td>
+                        <td class="numeric-cell bg-warning-subtle text-warning fw-bold">{{ d.pct_credito }}%</td>
+                        <td class="numeric-cell bg-primary-subtle text-primary fw-bold">${{ "{:,.0f}".format(d.mp).replace(',', '.') }}</td>
+                        <td class="numeric-cell bg-primary-subtle text-primary fw-bold">{{ d.pct_mp }}%</td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="fw-bold fs-6">
                     <tr>
                         <td class="sticky-col text-center py-2 bg-dark text-white">TOTALES</td>
+                        <td class="numeric-cell py-2 bg-dark-subtle text-body fw-bold">${{ "{:,.0f}".format(totales.total).replace(',', '.') }}</td>
                         <td class="numeric-cell py-2 bg-success text-white">${{ "{:,.0f}".format(totales.efectivo).replace(',', '.') }}</td>
-                        <td class="numeric-cell py-2 bg-info text-dark">${{ "{:,.0f}".format(totales.tbk).replace(',', '.') }}</td>
-                        <td class="numeric-cell py-2 bg-primary text-white">${{ "{:,.0f}".format(totales.total).replace(',', '.') }}</td>
-                        <td class="numeric-cell py-2 bg-warning text-dark text-end pe-4">{{ totales.porcentaje }}%</td>
+                        <td class="numeric-cell py-2 bg-success-subtle text-success fw-bold">{{ totales.pct_efectivo }}%</td>
+                        <td class="numeric-cell py-2 bg-info text-dark">${{ "{:,.0f}".format(totales.debito).replace(',', '.') }}</td>
+                        <td class="numeric-cell py-2 bg-info-subtle text-info fw-bold">{{ totales.pct_debito }}%</td>
+                        <td class="numeric-cell py-2 bg-warning text-dark">${{ "{:,.0f}".format(totales.credito).replace(',', '.') }}</td>
+                        <td class="numeric-cell py-2 bg-warning-subtle text-warning fw-bold">{{ totales.pct_credito }}%</td>
+                        <td class="numeric-cell py-2 bg-primary text-white">${{ "{:,.0f}".format(totales.mp).replace(',', '.') }}</td>
+                        <td class="numeric-cell py-2 bg-primary-subtle text-primary fw-bold">{{ totales.pct_mp }}%</td>
                     </tr>
                 </tfoot>
             </table>

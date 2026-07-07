@@ -121,3 +121,18 @@ class ProductoComplemento(db.Model):
 
     producto = db.relationship('Producto', backref=db.backref('complementos_assoc', lazy=True, cascade="all, delete-orphan"))
     complemento = db.relationship('Complemento', backref=db.backref('productos_assoc', lazy=True))
+
+
+class RoboMerma(db.Model):
+    __tablename__ = 'robos_mermas'
+    __table_args__ = _TABLE_ARGS
+
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'), nullable=False)
+    modulo_id = db.Column(db.Integer, db.ForeignKey('modulos.id'), nullable=False)
+    fecha = db.Column(db.Date, nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    motivo = db.Column(db.String, nullable=False)
+    observaciones = db.Column(db.Text)
+    fecha_registro = db.Column(db.DateTime, server_default=db.func.current_timestamp())

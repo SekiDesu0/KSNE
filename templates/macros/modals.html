@@ -738,11 +738,11 @@
                             <div class="card-body d-flex flex-column">
                                 <div class="d-flex align-items-center mb-3">
                                     <div class="bg-secondary text-white rounded p-3 me-3">
-                                        <i class="bi bi-calculator fs-4"></i>
+                                        <i class="bi bi-pie-chart-fill fs-4"></i>
                                     </div>
-                                    <h5 class="card-title mb-0">Cálculo de IVA</h5>
+                                    <h5 class="card-title mb-0">Control % Ventas Efectivo y Tarjetas</h5>
                                 </div>
-                                <p class="text-muted small flex-grow-1">Proyección de impuestos basados en las ventas declaradas.</p>
+                                <p class="text-muted small flex-grow-1">Participación porcentual de cada medio de pago en la venta total.</p>
                                 <a href="{{ url_for('admin.report_modulo_calculo_iva', modulo_id=modulo_id) }}" class="btn btn-secondary w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
@@ -758,7 +758,22 @@
                                     <h5 class="card-title mb-0">Robos y Mermas</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Cuadratura de inventario y registro de pérdida de productos.</p>
-                                <button class="btn btn-outline-danger w-100 mt-3" onclick="alert('Reporte en construcción')">Generar Reporte</button>
+                                <a href="{{ url_for('admin.report_modulo_robos_mermas', modulo_id=modulo_id) }}" class="btn btn-outline-danger w-100 mt-3">Generar Reporte</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-success text-white rounded p-3 me-3">
+                                        <i class="bi bi-box-arrow-up fs-4"></i>
+                                    </div>
+                                    <h5 class="card-title mb-0">Productos Vendidos y Complementos</h5>
+                                </div>
+                                <p class="text-muted small flex-grow-1">Total de egresos de productos y complementos por ventas, obsequios y pérdidas.</p>
+                                <a href="{{ url_for('admin.report_modulo_productos_vendidos', modulo_id=modulo_id) }}" class="btn btn-success w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>

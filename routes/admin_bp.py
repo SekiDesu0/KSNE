@@ -6,7 +6,7 @@ from datetime import date, datetime
 
 from models.models import (
     db, Zona, Modulo, Producto, PrecioHistorico,
-    Worker, Rendicion, RendicionItem, Complemento, ProductoComplemento,
+    Worker, Rendicion, RendicionItem, Complemento, ProductoComplemento, RoboMerma,
 )
 from utils import (
     admin_required, validate_rut, format_rut, validate_phone,
@@ -759,7 +759,89 @@ def report_modulo_centros_comerciales(modulo_id):
                            totales=data['totales'],
                            workers_list=workers_list, worker_actual=worker_id,
                            fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
-                           anios_disponibles=anios_list)
+                            anios_disponibles=anios_list)
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/centros_comerciales/exportar_excel')
+@admin_required
+def report_modulo_centros_comerciales_exportar_excel(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    data = report_service.get_cc_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+    mod_name, _, _ = report_service.get_modulo_workers_and_anios(modulo_id)
+
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Reporte Mall"
+
+    thin = Side(style='thin')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+    right_align = Alignment(horizontal='right', vertical='center')
+
+    hdr_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f"Reporte Centro Comercial — {mod_name} ({fecha_inicio} a {fecha_fin})"
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A1'].alignment = center
+
+    headers = ['Día', 'Nº Trans Red Compra', 'Nº Boletas Efectivo', 'Ventas Netas', 'IVA', 'Total Transacciones']
+    col_colors = {2: '0DCAF0', 3: 'FFC107', 4: '198754', 5: 'FFC107', 6: '0D6EFD'}
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=h)
+        cell.fill = hdr_fill
+        cell.alignment = center
+        cell.border = border
+        cell.font = Font(bold=True, color=col_colors.get(col, 'FFFFFF'), size=11)
+
+    for row_idx, dia in enumerate(data['dias_en_periodo'], 4):
+        d = data['data_por_dia'][dia['num']]
+        vals = [dia['num'], d['red_compra'], d['efectivo'], d['venta_neta'], d['iva'], d['total_trans']]
+        for col, v in enumerate(vals, 1):
+            cell = ws.cell(row=row_idx, column=col, value=v)
+            cell.border = border
+            if col == 1:
+                cell.alignment = center
+            else:
+                cell.number_format = '#,##0'
+                cell.alignment = right_align
+                if col in col_colors:
+                    cell.font = Font(color=col_colors[col])
+
+    total_row = 4 + len(data['dias_en_periodo'])
+    totals = data['totales']
+    total_vals = ['TOTAL', totals['red_compra'], totals['efectivo'], totals['venta_neta'], totals['iva'], totals['total_trans']]
+    total_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    for col, v in enumerate(total_vals, 1):
+        cell = ws.cell(row=total_row, column=col, value=v)
+        cell.fill = total_fill
+        cell.border = border
+        if col == 1:
+            cell.alignment = center
+            cell.font = Font(bold=True, color="FFFFFF", size=11)
+        else:
+            cell.number_format = '#,##0'
+            cell.alignment = right_align
+            cell.font = Font(bold=True, color=col_colors.get(col, 'FFFFFF'), size=11)
+
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 22
+    ws.column_dimensions['C'].width = 22
+    ws.column_dimensions['D'].width = 18
+    ws.column_dimensions['E'].width = 18
+    ws.column_dimensions['F'].width = 22
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"reporte_mall_{mod_name}_{fecha_inicio}_{fecha_fin}.xlsx".replace(' ', '_')
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>/calculo_iva')
@@ -777,7 +859,328 @@ def report_modulo_calculo_iva(modulo_id):
                            totales=data['totales'],
                            workers_list=workers_list, worker_actual=worker_id,
                            fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+                            anios_disponibles=anios_list)
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/calculo_iva/exportar_excel')
+@admin_required
+def report_modulo_calculo_iva_exportar_excel(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    data = report_service.get_iva_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+    mod_name, _, _ = report_service.get_modulo_workers_and_anios(modulo_id)
+
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Control % Ventas"
+
+    thin = Side(style='thin')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+    right_align = Alignment(horizontal='right', vertical='center')
+
+    hdr_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    ws.merge_cells('A1:J1')
+    ws['A1'] = f"Control % Ventas Efectivo y Tarjetas — {mod_name} ({fecha_inicio} a {fecha_fin})"
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A1'].alignment = center
+
+    headers = ['Día', 'Venta Total', 'Efectivo', '% EF.', 'Débito (TD)', '% TD',
+               'Crédito (TC)', '% TC', 'Mercado Pago', '% MP']
+    col_colors = {2: '2B303A', 3: '198754', 4: '198754', 5: '0DCAF0', 6: '0DCAF0',
+                  7: 'FFC107', 8: 'FFC107', 9: '0D6EFD', 10: '0D6EFD'}
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=h)
+        cell.fill = hdr_fill
+        cell.alignment = center
+        cell.border = border
+        cell.font = Font(bold=True, color=col_colors.get(col, 'FFFFFF'), size=11)
+
+    for row_idx, dia in enumerate(data['dias_en_periodo'], 4):
+        d = data['data_por_dia'][dia['num']]
+        vals = [dia['num'], d['total'], d['efectivo'], d['pct_efectivo'],
+                d['debito'], d['pct_debito'], d['credito'], d['pct_credito'],
+                d['mp'], d['pct_mp']]
+        for col, v in enumerate(vals, 1):
+            cell = ws.cell(row=row_idx, column=col, value=v)
+            cell.border = border
+            if col == 1:
+                cell.alignment = center
+            elif col in (4, 6, 8, 10):
+                cell.number_format = '0"%"'
+                cell.alignment = right_align
+                if col in col_colors:
+                    cell.font = Font(color=col_colors[col])
+            else:
+                cell.number_format = '#,##0'
+                cell.alignment = right_align
+                if col in col_colors:
+                    cell.font = Font(color=col_colors[col])
+
+    total_row = 4 + len(data['dias_en_periodo'])
+    totals = data['totales']
+    total_vals = ['TOTAL', totals['total'], totals['efectivo'], totals['pct_efectivo'],
+                  totals['debito'], totals['pct_debito'], totals['credito'],
+                  totals['pct_credito'], totals['mp'], totals['pct_mp']]
+    total_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    for col, v in enumerate(total_vals, 1):
+        cell = ws.cell(row=total_row, column=col, value=v)
+        cell.fill = total_fill
+        cell.border = border
+        if col == 1:
+            cell.alignment = center
+            cell.font = Font(bold=True, color="FFFFFF", size=11)
+        elif col in (4, 6, 8, 10):
+            cell.number_format = '0"%"'
+            cell.alignment = right_align
+            if col in col_colors:
+                cell.font = Font(bold=True, color=col_colors[col], size=11)
+        else:
+            cell.number_format = '#,##0'
+            cell.alignment = right_align
+            if col in col_colors:
+                cell.font = Font(bold=True, color=col_colors[col], size=11)
+
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 18
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 10
+    ws.column_dimensions['E'].width = 16
+    ws.column_dimensions['F'].width = 10
+    ws.column_dimensions['G'].width = 16
+    ws.column_dimensions['H'].width = 10
+    ws.column_dimensions['I'].width = 16
+    ws.column_dimensions['J'].width = 10
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"control_ventas_{mod_name}_{fecha_inicio}_{fecha_fin}.xlsx".replace(' ', '_')
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/robos_mermas')
+@admin_required
+def report_modulo_robos_mermas(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
+    data = report_service.get_robos_mermas_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+
+    return render_template('admin_report_robos_mermas.html',
+                           modulo_name=mod_name, modulo_id=modulo_id,
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
+                           productos=data['productos'],
+                           totales=data['totales'],
+                           workers_list=workers_list, worker_actual=worker_id,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
                            anios_disponibles=anios_list)
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/robos_mermas/exportar_excel')
+@admin_required
+def report_modulo_robos_mermas_exportar_excel(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    data = report_service.get_robos_mermas_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+    mod_name, _, _ = report_service.get_modulo_workers_and_anios(modulo_id)
+
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Robos y Mermas"
+
+    thin = Side(style='thin')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+    right_align = Alignment(horizontal='right', vertical='center')
+
+    hdr_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    ws.merge_cells('A1:H1')
+    ws['A1'] = f"Robos y Mermas — {mod_name} ({fecha_inicio} a {fecha_fin})"
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A1'].alignment = center
+
+    headers = ['Producto', 'Cant. Robos', 'Valor Robos', 'Cant. Mermas', 'Valor Mermas',
+               'Precio Unit.', 'Total Cant.', 'Total Valor']
+    col_colors = {2: 'DC3545', 3: 'DC3545', 4: 'FFC107', 5: 'FFC107',
+                  6: '6C757D', 7: '0D6EFD', 8: '0D6EFD'}
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=h)
+        cell.fill = hdr_fill
+        cell.alignment = center
+        cell.border = border
+        cell.font = Font(bold=True, color=col_colors.get(col, 'FFFFFF'), size=11)
+
+    row_idx = 4
+    for prod_id, p in data['productos'].items():
+        vals = [p['name'], p['cant_robos'], p['val_robos'], p['cant_mermas'],
+                p['val_mermas'], p['precio'], p['cant_total'], p['val_total']]
+        for col, v in enumerate(vals, 1):
+            cell = ws.cell(row=row_idx, column=col, value=v)
+            cell.border = border
+            if col == 1:
+                cell.alignment = Alignment(horizontal='left', vertical='center')
+            else:
+                cell.alignment = right_align
+                if col in (3, 5, 6, 8):
+                    cell.number_format = '#,##0'
+                if col in col_colors:
+                    cell.font = Font(color=col_colors[col])
+        row_idx += 1
+
+    totals = data['totales']
+    total_vals = ['TOTALES', totals['cant_robos'], totals['val_robos'],
+                  totals['cant_mermas'], totals['val_mermas'], '',
+                  totals['cant_total'], totals['val_total']]
+    total_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    for col, v in enumerate(total_vals, 1):
+        cell = ws.cell(row=row_idx, column=col, value=v)
+        cell.fill = total_fill
+        cell.border = border
+        if col == 1:
+            cell.alignment = center
+            cell.font = Font(bold=True, color="FFFFFF", size=11)
+        else:
+            cell.alignment = right_align
+            if col in (3, 5, 6, 8):
+                cell.number_format = '#,##0'
+            if col in col_colors:
+                cell.font = Font(bold=True, color=col_colors[col], size=11)
+
+    ws.column_dimensions['A'].width = 40
+    ws.column_dimensions['B'].width = 14
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 14
+    ws.column_dimensions['E'].width = 16
+    ws.column_dimensions['F'].width = 14
+    ws.column_dimensions['G'].width = 14
+    ws.column_dimensions['H'].width = 16
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"robos_mermas_{mod_name}_{fecha_inicio}_{fecha_fin}.xlsx".replace(' ', '_')
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/productos_vendidos')
+@admin_required
+def report_modulo_productos_vendidos(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    mod_name, workers_list, anios_list = report_service.get_modulo_workers_and_anios(modulo_id)
+    data = report_service.get_productos_vendidos_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+
+    return render_template('admin_report_productos_vendidos.html',
+                           modulo_name=mod_name, modulo_id=modulo_id,
+                           mes_nombre=f"{fecha_inicio} a {fecha_fin}",
+                           items=data['items'],
+                           totales=data['totales'],
+                           workers_list=workers_list, worker_actual=worker_id,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+                           anios_disponibles=anios_list)
+
+
+@admin_bp.route('/reportes/modulo/<int:modulo_id>/productos_vendidos/exportar_excel')
+@admin_required
+def report_modulo_productos_vendidos_exportar_excel(modulo_id):
+    fecha_inicio, fecha_fin, worker_id = get_report_params()
+    data = report_service.get_productos_vendidos_data(modulo_id, fecha_inicio, fecha_fin, worker_id)
+    mod_name, _, _ = report_service.get_modulo_workers_and_anios(modulo_id)
+
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Productos Vendidos"
+
+    thin = Side(style='thin')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+    right_align = Alignment(horizontal='right', vertical='center')
+
+    hdr_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    ws.merge_cells('A1:I1')
+    ws['A1'] = f"Productos Vendidos y Complementos — {mod_name} ({fecha_inicio} a {fecha_fin})"
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A1'].alignment = center
+
+    headers = ['Nombre', 'Tipo', 'Vendidos (u)', 'Venta ($)', 'Complementos (u)',
+               'Robos/Mermas (u)', 'Robos/Mermas ($)', 'Total (u)', 'Total ($)']
+    col_colors = {3: '198754', 4: '198754', 5: '0DCAF0', 6: 'DC3545', 7: 'DC3545',
+                  8: '0D6EFD', 9: '0D6EFD'}
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=h)
+        cell.fill = hdr_fill
+        cell.alignment = center
+        cell.border = border
+        cell.font = Font(bold=True, color=col_colors.get(col, 'FFFFFF'), size=11)
+
+    row_idx = 4
+    for item in data['items']:
+        vals = [item['name'], item['tipo'], item['vendidos_qty'], item['vendidos_valor'],
+                item['complementos_qty'], item['robos_qty'], item['robos_valor'],
+                item['total_qty'], item['total_valor']]
+        for col, v in enumerate(vals, 1):
+            cell = ws.cell(row=row_idx, column=col, value=v)
+            cell.border = border
+            if col <= 2:
+                cell.alignment = Alignment(horizontal='left', vertical='center')
+            else:
+                cell.alignment = right_align
+                if col in (4, 7, 9):
+                    cell.number_format = '#,##0'
+                if col in col_colors:
+                    cell.font = Font(color=col_colors[col])
+        row_idx += 1
+
+    totals = data['totales']
+    total_vals = ['TOTALES', '', totals['vendidos_qty'], totals['vendidos_valor'],
+                  totals['complementos_qty'], totals['robos_qty'], totals['robos_valor'],
+                  totals['total_qty'], totals['total_valor']]
+    total_fill = PatternFill(start_color="2B303A", end_color="2B303A", fill_type="solid")
+    for col, v in enumerate(total_vals, 1):
+        cell = ws.cell(row=row_idx, column=col, value=v)
+        cell.fill = total_fill
+        cell.border = border
+        if col <= 2:
+            cell.alignment = center
+            cell.font = Font(bold=True, color="FFFFFF", size=11)
+        else:
+            cell.alignment = right_align
+            if col in (4, 7, 9):
+                cell.number_format = '#,##0'
+            if col in col_colors:
+                cell.font = Font(bold=True, color=col_colors[col], size=11)
+
+    ws.column_dimensions['A'].width = 40
+    ws.column_dimensions['B'].width = 14
+    ws.column_dimensions['C'].width = 14
+    ws.column_dimensions['D'].width = 16
+    ws.column_dimensions['E'].width = 16
+    ws.column_dimensions['F'].width = 16
+    ws.column_dimensions['G'].width = 16
+    ws.column_dimensions['H'].width = 14
+    ws.column_dimensions['I'].width = 16
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"productos_vendidos_{mod_name}_{fecha_inicio}_{fecha_fin}.xlsx".replace(' ', '_')
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>/exportar_excel')

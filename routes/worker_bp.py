@@ -187,3 +187,91 @@ def new_rendicion():
                            has_commission=has_commission,
                            otros_trabajadores=otros_trabajadores,
                            today=date.today().strftime('%Y-%m-%d'))
+
+
+@worker_bp.route('/robos-mermas')
+@login_required
+def historial_robos_mermas():
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT rm.id, rm.fecha, m.name, p.name, rm.cantidad, rm.motivo, rm.observaciones
+        FROM robos_mermas rm
+        JOIN modulos m ON rm.modulo_id = m.id
+        JOIN productos p ON rm.producto_id = p.id
+        WHERE rm.worker_id = ?
+        ORDER BY rm.fecha DESC, rm.id DESC
+    ''', (session['user_id'],))
+    reportes = c.fetchall()
+    conn.close()
+
+    return render_template('worker_robos_mermas_history.html', reportes=reportes)
+
+
+@worker_bp.route('/robos-mermas/reportar', methods=['GET', 'POST'])
+@login_required
+def reportar_robo_merma():
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute('''SELECT w.modulo_id, m.name, z.id, z.name
+                 FROM workers w
+                 JOIN modulos m ON w.modulo_id = m.id
+                 JOIN zonas z ON m.zona_id = z.id
+                 WHERE w.id = ?''', (session['user_id'],))
+    worker_info = c.fetchone()
+
+    if not worker_info:
+        conn.close()
+        return "Error: No tienes un módulo asignado. Contacta al administrador."
+
+    modulo_id, modulo_name, zona_id, zona_name = worker_info
+
+    if request.method == 'POST':
+        fecha = request.form.get('fecha')
+        obs_general = request.form.get('observaciones', '').strip()
+
+        if not fecha:
+            flash("Error: La fecha es obligatoria.", "danger")
+            return redirect(url_for('worker.reportar_robo_merma'))
+
+        items_guardados = 0
+        for key, value in request.form.items():
+            if key.startswith('qty_') and value and int(value) > 0:
+                prod_id = int(key.split('_')[1])
+                cantidad = int(value)
+                motivo = request.form.get(f'motivo_{prod_id}')
+
+                if motivo in ('robo', 'merma'):
+                    c.execute('''INSERT INTO robos_mermas
+                                 (worker_id, modulo_id, fecha, producto_id, cantidad, motivo, observaciones)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                              (session['user_id'], modulo_id, fecha, prod_id, cantidad, motivo, obs_general))
+                    items_guardados += 1
+
+        conn.commit()
+        flash(f"Reporte enviado exitosamente. {items_guardados} producto(s) registrado(s).", "success")
+        return redirect(url_for('worker.historial_robos_mermas'))
+
+    c.execute('''
+        SELECT p.id, p.name, ph.price
+        FROM productos p
+        JOIN precios_historicos ph ON p.id = ph.producto_id
+        WHERE ph.zona_id = ?
+          AND ph.fecha_activacion = (
+              SELECT MAX(fecha_activacion)
+              FROM precios_historicos
+              WHERE producto_id = p.id AND zona_id = ?
+              AND fecha_activacion <= datetime('now', 'localtime')
+          )
+        ORDER BY p.name
+    ''', (zona_id, zona_id))
+    productos = c.fetchall()
+    conn.close()
+
+    return render_template('worker_robos_mermas.html',
+                           modulo_name=modulo_name,
+                           zona_name=zona_name,
+                           productos=productos,
+                           today=date.today().strftime('%Y-%m-%d'))

@@ -1,0 +1,99 @@
+{% extends "macros/base.html" %}
+{% from "macros/modals.html" import report_filters %}
+{% from "macros/ui.html" import back_link %}
+
+{% block title %}Reporte: Productos Vendidos y Complementos - {{ modulo_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {{ back_link(url_for('admin.admin_reportes_index'), 'Volver al Menú') }}
+        <h2>Productos Vendidos y Complementos</h2>
+    </div>
+    <div class="text-end">
+        <div><strong class="text-primary fs-5">{{ modulo_name }}</strong></div>
+        <div class="text-muted"><small>Período: {{ mes_nombre }}</small></div>
+    </div>
+</div>
+{{ report_filters(
+    url_for('admin.report_modulo_productos_vendidos', modulo_id=modulo_id),
+    workers_list,
+    worker_actual,
+    fecha_inicio,
+    fecha_fin
+) }}
+<div class="card shadow-sm border-0">
+    <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center pb-0">
+        <span class="fw-bold text-muted text-uppercase">
+            <i class="bi bi-box-arrow-up me-1"></i> Egresos de Inventario
+        </span>
+        <a class="btn btn-success btn-sm shadow-sm"
+           href="{{ url_for('admin.report_modulo_productos_vendidos_exportar_excel',
+                            modulo_id=modulo_id, fecha_inicio=fecha_inicio,
+                            fecha_fin=fecha_fin, worker_id=worker_actual) }}">
+            <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar Excel (.xlsx)
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive table-container custom-scrollbar">
+            <table class="table table-bordered table-hover table-sm mb-0 text-center text-nowrap align-middle">
+                <thead>
+                    <tr>
+                        <th class="sticky-col py-3 align-middle bg-dark text-white" style="width: 22%;">NOMBRE</th>
+                        <th class="py-3 bg-dark text-white" style="width: 8%;">TIPO</th>
+                        <th class="py-3 bg-success text-white" style="width: 8%;">VENDIDOS<br>(u)</th>
+                        <th class="py-3 bg-success text-white" style="width: 10%;">VENTA<br>($)</th>
+                        <th class="py-3 bg-info text-dark" style="width: 8%;">COMPLEM.<br>(u)</th>
+                        <th class="py-3 bg-danger text-white" style="width: 8%;">ROBOS/M.<br>(u)</th>
+                        <th class="py-3 bg-danger text-white" style="width: 10%;">ROBOS/M.<br>($)</th>
+                        <th class="py-3 bg-primary text-white" style="width: 8%;">TOTAL<br>(u)</th>
+                        <th class="py-3 bg-primary text-white" style="width: 10%;">TOTAL<br>($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="sticky-col text-start fw-bold">{{ item.name }}</td>
+                        <td class="py-2">
+                            {% if item.tipo == 'Producto' %}
+                                <span class="badge bg-secondary">Producto</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Complemento</span>
+                            {% endif %}
+                        </td>
+                        <td class="numeric-cell bg-success-subtle text-success fw-bold">{{ item.vendidos_qty }}</td>
+                        <td class="numeric-cell bg-success-subtle text-success fw-bold">${{ "{:,.0f}".format(item.vendidos_valor).replace(',', '.') }}</td>
+                        <td class="numeric-cell bg-info-subtle text-info fw-bold">{{ item.complementos_qty }}</td>
+                        <td class="numeric-cell bg-danger-subtle text-danger fw-bold">{{ item.robos_qty }}</td>
+                        <td class="numeric-cell bg-danger-subtle text-danger fw-bold">${{ "{:,.0f}".format(item.robos_valor).replace(',', '.') }}</td>
+                        <td class="numeric-cell bg-primary-subtle text-primary fw-bold">{{ item.total_qty }}</td>
+                        <td class="numeric-cell bg-primary-subtle text-primary fw-bold">${{ "{:,.0f}".format(item.total_valor).replace(',', '.') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            No hay registros de ventas en este período.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if items %}
+                <tfoot class="fw-bold fs-6">
+                    <tr>
+                        <td class="sticky-col text-center py-2 bg-dark text-white" colspan="2">TOTALES</td>
+                        <td class="numeric-cell py-2 bg-success text-white">{{ totales.vendidos_qty }}</td>
+                        <td class="numeric-cell py-2 bg-success text-white">${{ "{:,.0f}".format(totales.vendidos_valor).replace(',', '.') }}</td>
+                        <td class="numeric-cell py-2 bg-info text-dark">{{ totales.complementos_qty }}</td>
+                        <td class="numeric-cell py-2 bg-danger text-white">{{ totales.robos_qty }}</td>
+                        <td class="numeric-cell py-2 bg-danger text-white">${{ "{:,.0f}".format(totales.robos_valor).replace(',', '.') }}</td>
+                        <td class="numeric-cell py-2 bg-primary text-white">{{ totales.total_qty }}</td>
+                        <td class="numeric-cell py-2 bg-primary text-white">${{ "{:,.0f}".format(totales.total_valor).replace(',', '.') }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

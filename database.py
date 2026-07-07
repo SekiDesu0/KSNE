@@ -292,6 +292,21 @@ def init_db():
                   FOREIGN KEY (complemento_id) REFERENCES complementos(id) ON DELETE CASCADE,
                   UNIQUE(producto_id, complemento_id))''')
     
+    # Robos y Mermas
+    c.execute('''CREATE TABLE IF NOT EXISTS robos_mermas
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  worker_id INTEGER NOT NULL,
+                  modulo_id INTEGER NOT NULL,
+                  fecha DATE NOT NULL,
+                  producto_id INTEGER NOT NULL,
+                  cantidad INTEGER NOT NULL,
+                  motivo TEXT NOT NULL CHECK(motivo IN ('robo', 'merma')),
+                  observaciones TEXT,
+                  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (worker_id) REFERENCES workers(id),
+                  FOREIGN KEY (modulo_id) REFERENCES modulos(id),
+                  FOREIGN KEY (producto_id) REFERENCES productos(id))''')
+
     # Migrate: add bank fields if missing
     for col in ['nombre_banco', 'numero_cuenta', 'tipo_cuenta', 'rut_banco']:
         try:

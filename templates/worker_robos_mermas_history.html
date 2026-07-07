@@ -1,0 +1,63 @@
+{% extends "macros/base.html" %}
+{% from "macros/ui.html" import flashed_messages %}
+
+{% block title %}Historial de Robos y Mermas{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <h2 class="mb-0">Historial de Robos y Mermas</h2>
+    <div class="d-flex gap-2 align-self-start align-self-md-auto">
+        <a href="{{ url_for('worker.reportar_robo_merma') }}" class="btn btn-danger shadow-sm">
+            <i class="bi bi-plus-circle me-2"></i>Nuevo Reporte
+        </a>
+    </div>
+</div>
+
+{{ flashed_messages() }}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm mb-0 text-nowrap" style="font-size: 0.9rem;">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="py-2">Fecha</th>
+                        <th class="py-2">Módulo</th>
+                        <th class="py-2">Producto</th>
+                        <th class="py-2">Cantidad</th>
+                        <th class="py-2">Motivo</th>
+                        <th class="py-2 d-none d-lg-table-cell">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reportes %}
+                    <tr>
+                        <td class="align-middle">{{ r[1] }}</td>
+                        <td class="align-middle"><span class="badge bg-info text-dark">{{ r[2] }}</span></td>
+                        <td class="align-middle">{{ r[3] }}</td>
+                        <td class="align-middle fw-bold">{{ r[4] }}</td>
+                        <td class="align-middle">
+                            {% if r[5] == 'robo' %}
+                                <span class="badge bg-danger">Robo</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Merma</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle d-none d-lg-table-cell text-muted text-truncate" style="max-width: 200px;">
+                            {{ r[6] if r[6] else '-' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted text-wrap">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Aún no tienes robos o mermas registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -51,6 +51,11 @@
                                 <i class="bi bi-speedometer2 me-1"></i> Mis Rendiciones
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active fw-bold' if request.endpoint == 'worker.historial_robos_mermas' }}" href="{{ url_for('worker.historial_robos_mermas') }}">
+                                <i class="bi bi-shield-exclamation me-1"></i> Robos y Mermas
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
                 
