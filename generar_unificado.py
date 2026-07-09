@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from werkzeug.security import generate_password_hash
 from database import get_db_connection, init_db
 
-def generar_historico_definitivo(dias_atras=180):
+def generar_historico_definitivo(dias_atras=1460): # 4 años de datos históricos
     init_db()
     conn = get_db_connection()
     c = conn.cursor()
@@ -402,4 +402,4 @@ def generar_historico_definitivo(dias_atras=180):
     print(f"Total registros generados: {rendiciones_creadas + robos_creados + mermas_creados}")
 
 if __name__ == '__main__':
-    generar_historico_definitivo(180)
+    generar_historico_definitivo()

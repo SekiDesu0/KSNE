@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
-from models.models import db, Modulo, Worker, Rendicion, RendicionItem, RoboMerma, Producto, PrecioHistorico, ProductoComplemento, Complemento
+from models.models import db, Modulo, Worker, Rendicion, RendicionItem, RoboMerma, Producto, PrecioHistorico, ProductoComplemento, Complemento, Zona
 
 Companion = aliased(Worker, name='companion')
 
@@ -546,4 +546,252 @@ def get_productos_vendidos_data(modulo_id, fecha_inicio, fecha_fin, worker_id=No
     return {
         'items': items_sorted,
         'totales': totales,
+    }
+
+
+def get_global_consolidado_data(fecha_inicio, fecha_fin, zona_id=None):
+    base_filters = [*_fecha_filters(fecha_inicio, fecha_fin)]
+    if zona_id:
+        base_filters.append(Modulo.zona_id == zona_id)
+
+    ventas_por_zona_rows = db.session.query(
+        Zona.name,
+        func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo),
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).join(Zona, Modulo.zona_id == Zona.id
+    ).filter(*base_filters
+    ).group_by(Zona.name
+    ).all()
+    ventas_por_zona = {r[0]: (r[1] or 0) for r in ventas_por_zona_rows}
+
+    medios_raw = db.session.query(
+        func.sum(Rendicion.venta_efectivo),
+        func.sum(Rendicion.venta_debito),
+        func.sum(Rendicion.venta_credito),
+        func.sum(Rendicion.venta_mp),
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).filter(*base_filters
+    ).first()
+    medios_pago = {
+        'Efectivo': medios_raw[0] or 0,
+        'Débito': medios_raw[1] or 0,
+        'Crédito': medios_raw[2] or 0,
+        'Mercado Pago': medios_raw[3] or 0,
+    }
+
+    ventas_diarias_rows = db.session.query(
+        func.strftime('%Y-%m-%d', Rendicion.fecha).label('fecha'),
+        func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo),
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).filter(*base_filters
+    ).group_by('fecha'
+    ).order_by('fecha'
+    ).all()
+    ventas_diarias = [{'fecha': r[0], 'total': r[1] or 0} for r in ventas_diarias_rows]
+
+    top_modulos_rows = db.session.query(
+        Modulo.name,
+        Zona.name,
+        func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo),
+        func.sum(Rendicion.gastos),
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).join(Zona, Modulo.zona_id == Zona.id
+    ).filter(*base_filters
+    ).group_by(Modulo.id, Modulo.name, Zona.name
+    ).order_by(func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo).desc()
+    ).limit(10
+    ).all()
+    top_modulos = [
+        {'modulo': r[0], 'zona': r[1], 'ventas': r[2] or 0, 'gastos': r[3] or 0}
+        for r in top_modulos_rows
+    ]
+
+    comision_filters = list(base_filters) + [
+        db.or_(Rendicion.worker_comision == True, Rendicion.companion_comision == True),
+    ]
+    comisiones_total = db.session.query(
+        func.sum(RendicionItem.cantidad * RendicionItem.comision_historica),
+    ).join(Rendicion, RendicionItem.rendicion_id == Rendicion.id
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).filter(*comision_filters
+    ).scalar() or 0
+
+    gastos_total = db.session.query(
+        func.sum(Rendicion.gastos),
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).filter(*base_filters
+    ).scalar() or 0
+
+    dias_activos = db.session.query(
+        func.count(func.distinct(Rendicion.fecha)),
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).filter(*base_filters
+    ).scalar() or 0
+
+    zonas = db.session.query(Zona.id, Zona.name).order_by(Zona.name).all()
+    zonas_list = [(z.id, z.name) for z in zonas]
+
+    total_ventas = sum(ventas_por_zona.values())
+
+    return {
+        'ventas_por_zona': ventas_por_zona,
+        'medios_pago': medios_pago,
+        'ventas_diarias': ventas_diarias,
+        'top_modulos': top_modulos,
+        'totales': {
+            'ventas': total_ventas,
+            'comisiones': comisiones_total,
+            'gastos': gastos_total,
+            'dias_activos': dias_activos,
+        },
+        'zonas': zonas_list,
+    }
+
+
+def get_metas_data(anio, mes, porcentaje):
+    import calendar
+    hoy = date.today()
+    dias_del_mes = calendar.monthrange(anio, mes)[1]
+
+    if anio == hoy.year and mes == hoy.month:
+        dias_transcurridos = hoy.day
+    else:
+        dias_transcurridos = dias_del_mes
+
+    mes_inicio = date(anio, mes, 1)
+    mes_fin = date(anio, mes, dias_del_mes)
+    ly_anio = anio - 1
+    ly_inicio = date(ly_anio, mes, 1)
+    ly_fin = date(ly_anio, mes, dias_del_mes)
+
+    factor = 1 + porcentaje / 100.0
+
+    modulos_rows = db.session.query(Modulo.id, Modulo.name, Zona.name).join(
+        Zona, Modulo.zona_id == Zona.id
+    ).order_by(Zona.name, Modulo.name).all()
+
+    last_year_sales = {}
+    ly_rows = db.session.query(
+        Rendicion.modulo_id,
+        func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo),
+    ).filter(
+        Rendicion.fecha >= ly_inicio,
+        Rendicion.fecha <= ly_fin,
+    ).group_by(Rendicion.modulo_id).all()
+    for r in ly_rows:
+        last_year_sales[r[0]] = r[1] or 0
+
+    current_sales = {}
+    cur_rows = db.session.query(
+        Rendicion.modulo_id,
+        func.sum(Rendicion.venta_debito + Rendicion.venta_credito + Rendicion.venta_mp + Rendicion.venta_efectivo),
+    ).filter(
+        Rendicion.fecha >= mes_inicio,
+        Rendicion.fecha <= mes_fin,
+    ).group_by(Rendicion.modulo_id).all()
+    for r in cur_rows:
+        current_sales[r[0]] = r[1] or 0
+
+    rows = []
+    total_meta = 0
+    total_ventas = 0
+    modulos_cumplen = 0
+
+    for mod_id, mod_name, zona_name in modulos_rows:
+        ventas_ly = last_year_sales.get(mod_id, 0)
+        meta_total = round(ventas_ly * factor)
+        ventas = current_sales.get(mod_id, 0)
+
+        if meta_total > 0:
+            pct_cumplimiento = round(ventas / meta_total * 100, 2)
+            desfase = round(100 - pct_cumplimiento, 2)
+        else:
+            pct_cumplimiento = 0.0
+            desfase = 0.0
+
+        if dias_transcurridos > 0:
+            meta_al_dia = round(meta_total * dias_transcurridos / dias_del_mes)
+        else:
+            meta_al_dia = 0
+
+        diferencia = ventas - meta_al_dia
+
+        if dias_transcurridos > 0:
+            proyeccion = round(ventas / dias_transcurridos * dias_del_mes)
+        else:
+            proyeccion = 0
+
+        if meta_total > 0:
+            pct_proyeccion = round(proyeccion / meta_total * 100, 2)
+        else:
+            pct_proyeccion = 0.0
+
+        cumple = ventas >= meta_total
+        if cumple:
+            modulos_cumplen += 1
+
+        total_meta += meta_total
+        total_ventas += ventas
+
+        rows.append({
+            'zona': zona_name,
+            'modulo': mod_name,
+            'meta_total': meta_total,
+            'ventas': ventas,
+            'pct_cumplimiento': pct_cumplimiento,
+            'desfase': desfase,
+            'meta_al_dia': meta_al_dia,
+            'diferencia': diferencia,
+            'proyeccion': proyeccion,
+            'pct_proyeccion': pct_proyeccion,
+            'cumple': cumple,
+        })
+
+    if total_meta > 0:
+        total_pct = round(total_ventas / total_meta * 100, 2)
+        total_desfase = round(100 - total_pct, 2)
+    else:
+        total_pct = 0.0
+        total_desfase = 0.0
+
+    if dias_del_mes > 0:
+        total_meta_al_dia = round(total_meta * dias_transcurridos / dias_del_mes)
+    else:
+        total_meta_al_dia = 0
+
+    total_diferencia = total_ventas - total_meta_al_dia
+
+    if dias_transcurridos > 0:
+        total_proyeccion = round(total_ventas / dias_transcurridos * dias_del_mes)
+    else:
+        total_proyeccion = 0
+
+    if total_meta > 0:
+        total_pct_proyeccion = round(total_proyeccion / total_meta * 100, 2)
+    else:
+        total_pct_proyeccion = 0
+
+    pct_mes = round(dias_transcurridos / dias_del_mes * 100, 2)
+    meta_cumplida = total_ventas >= total_meta
+
+    return {
+        'rows': rows,
+        'totales': {
+            'meta': total_meta,
+            'ventas': total_ventas,
+            'pct_cumplimiento': total_pct,
+            'desfase': total_desfase,
+            'meta_al_dia': total_meta_al_dia,
+            'diferencia': total_diferencia,
+            'proyeccion': total_proyeccion,
+            'pct_proyeccion': total_pct_proyeccion,
+        },
+        'summary': {
+            'dias_del_mes': dias_del_mes,
+            'dias_transcurridos': dias_transcurridos,
+            'pct_mes': pct_mes,
+            'meta_cumplida': meta_cumplida,
+            'modulos_cumplen': modulos_cumplen,
+            'total_modulos': len(modulos_rows),
+        },
     }

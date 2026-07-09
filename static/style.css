@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-
 :root {
     --bg-dark: #09090b;
     --bg-card: rgba(18, 18, 23, 0.7);
@@ -379,7 +377,11 @@ body {
 }
 
 .table-striped > tbody > tr:nth-of-type(odd) > * {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.table-hover > tbody > tr > * {
+    transition: background 0.2s ease;
 }
 
 .table-hover > tbody > tr:hover > * {
@@ -396,11 +398,28 @@ body {
 
 .table-dark > thead > tr > th {
     color: var(--text-secondary);
-    background: rgba(0, 0, 0, 0.3);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.25));
+}
+
+.table > thead > tr > th:first-child {
+    border-radius: 0.5rem 0 0 0;
+}
+
+.table > thead > tr > th:last-child {
+    border-radius: 0 0.5rem 0 0;
 }
 
 .table-dark > tbody > tr > td {
     border-color: var(--border-color);
+}
+
+.table-bordered,
+.table-bordered > :not(caption) > * > * {
+    border-color: var(--border-color);
+}
+
+.table-sm > :not(caption) > * > * {
+    padding: 0.4rem 0.6rem;
 }
 
 /* ============================================================
@@ -409,7 +428,7 @@ body {
 
 .form-control,
 .form-select {
-    background: rgba(255, 255, 255, 0.03);
+    background-color: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
     padding: 0.6rem 1rem;
@@ -424,7 +443,7 @@ body {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
-    background: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .form-control::placeholder {
@@ -433,7 +452,7 @@ body {
 }
 
 .form-control[readonly] {
-    background: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.2);
     opacity: 1;
     cursor: not-allowed;
     border-color: var(--border-color);
@@ -492,14 +511,18 @@ body {
    ============================================================ */
 
 .modal-content {
-    background: #121217;
+    background: rgba(18, 18, 23, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
     border-radius: 1.5rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
     border-bottom: 1px solid var(--border-color);
+    border-radius: 1.5rem 1.5rem 0 0;
     padding: 1.25rem 1.5rem;
 }
 
@@ -514,6 +537,7 @@ body {
 }
 
 .modal-footer {
+    background: rgba(255, 255, 255, 0.02);
     border-top: 1px solid var(--border-color);
     padding: 1rem 1.5rem;
 }
@@ -768,4 +792,41 @@ h5.modal-title {
         padding: 4px 7px;
         font-size: 0.75rem;
     }
+}
+
+/* ============================================================
+   METAS REPORT — Custom Progress Bars
+   ============================================================ */
+
+.meta-progress {
+    height: 26px;
+    min-width: 120px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.meta-progress-bar {
+    height: 100%;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--primary), #4f46e5);
+    transition: width 0.5s ease;
+}
+
+.meta-progress-bar.above-target {
+    background: linear-gradient(135deg, var(--success), #059669);
+}
+
+.meta-progress-bar.below-target {
+    background: linear-gradient(135deg, var(--warning), #d97706);
+}
+
+.meta-progress-text {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }

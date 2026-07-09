@@ -307,6 +307,11 @@ def init_db():
                   FOREIGN KEY (modulo_id) REFERENCES modulos(id),
                   FOREIGN KEY (producto_id) REFERENCES productos(id))''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS config
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  key TEXT UNIQUE NOT NULL,
+                  value TEXT NOT NULL)''')
+
     # Migrate: add bank fields if missing
     for col in ['nombre_banco', 'numero_cuenta', 'tipo_cuenta', 'rut_banco']:
         try:

@@ -8,37 +8,98 @@
     <h2><i class="bi bi-graph-up text-primary me-2"></i>Panel de Reportes</h2>
 </div>
 
-<div class="mb-4">
-    <p class="text-muted">Selecciona un módulo para ver sus reportes disponibles.</p>
-</div>
+<div class="mb-5">
+    <h4 class="text-primary border-bottom border-secondary pb-2 mb-4">
+        <i class="bi bi-globe2 me-2"></i>Reportes Globales
+    </h4>
+    <p class="text-muted mb-4">Reportes consolidados que abarcan todas las zonas y módulos del sistema.</p>
 
-{% for zona_name, lista_modulos in modulos|groupby(2) %}
-    <div class="zona-section mb-5">
-        <h4 class="text-info border-bottom border-secondary pb-2 mb-4">
-            <i class="bi bi-geo-alt-fill me-2"></i>Zona: {{ zona_name }}
-        </h4>
-
-        <div class="row g-4">
-            {% for mod in lista_modulos %}
-            <div class="col-md-4 col-sm-6">
-                <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportMenuModal{{ mod[0] }}">
-                    <div class="card shadow-sm h-100 border-0 hover-shadow transition-all bg-dark-subtle">
-                        <div class="card-body text-center py-4">
-                            <div class="mb-3">
-                                <i class="bi bi-shop display-4 text-info"></i>
+    <div class="row g-4">
+        <div class="col-md-4 col-sm-6">
+            <a href="{{ url_for('admin.report_global_consolidado') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 border-0 hover-card">
+                    <div class="card-body text-center py-4">
+                        <div class="mb-3">
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                                <i class="bi bi-graph-up-arrow fs-3"></i>
                             </div>
-                            <h5 class="card-title text-body">{{ mod[1] }}</h5>
-                            <span class="badge bg-primary mt-2">Ver Reportes <i class="bi bi-arrow-right ms-1"></i></span>
+                        </div>
+                        <h5 class="card-title text-body">Consolidado General</h5>
+                        <p class="text-muted small mb-3">Resumen financiero de todas las zonas y módulos con gráficos interactivos.</p>
+                        <span class="badge bg-primary">Generar Reporte <i class="bi bi-arrow-right ms-1"></i></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+            <div class="card shadow-sm h-100 border-0 bg-dark-subtle opacity-50">
+                <div class="card-body text-center py-4">
+                    <div class="mb-3">
+                        <div class="bg-info text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                            <i class="bi bi-building fs-3"></i>
                         </div>
                     </div>
-                </a>
+                    <h5 class="card-title text-body">Ventas por Zona</h5>
+                    <p class="text-muted small mb-3">Comparativa de ventas consolidadas por zona geográfica.</p>
+                    <span class="badge bg-secondary">Próximamente</span>
+                </div>
             </div>
-            {% endfor %}
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+            <a href="{{ url_for('admin.report_metas') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 border-0 hover-card">
+                    <div class="card-body text-center py-4">
+                        <div class="mb-3">
+                            <div class="bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                                <i class="bi bi-bullseye fs-3"></i>
+                            </div>
+                        </div>
+                        <h5 class="card-title text-body">Cumplimiento de Metas</h5>
+                        <p class="text-muted small mb-3">Seguimiento de metas vs ventas reales con proyección y gráficos.</p>
+                        <span class="badge bg-warning text-dark">Generar Reporte <i class="bi bi-arrow-right ms-1"></i></span>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
-{% else %}
-    <div class="alert alert-info">No hay módulos registrados en el sistema.</div>
-{% endfor %}
+</div>
+
+<div>
+    <h4 class="text-info border-bottom border-secondary pb-2 mb-4">
+        <i class="bi bi-building me-2"></i>Reportes por Módulo
+    </h4>
+    <p class="text-muted mb-4">Selecciona un módulo para acceder a sus reportes detallados.</p>
+
+    {% for zona_name, lista_modulos in modulos|groupby(2) %}
+        <div class="zona-section mb-5">
+            <h5 class="text-muted border-bottom border-secondary pb-2 mb-4">
+                <i class="bi bi-geo-alt-fill me-2"></i>Zona: {{ zona_name }}
+            </h5>
+
+            <div class="row g-4">
+                {% for mod in lista_modulos %}
+                <div class="col-md-4 col-sm-6">
+                    <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportMenuModal{{ mod[0] }}">
+                        <div class="card shadow-sm h-100 border-0 hover-shadow transition-all bg-dark-subtle">
+                            <div class="card-body text-center py-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-shop display-4 text-info"></i>
+                                </div>
+                                <h5 class="card-title text-body">{{ mod[1] }}</h5>
+                                <span class="badge bg-primary mt-2">Ver Reportes <i class="bi bi-arrow-right ms-1"></i></span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">No hay módulos registrados en el sistema.</div>
+    {% endfor %}
+</div>
 
 {% for zona_name, lista_modulos in modulos|groupby(2) %}
     {% for mod in lista_modulos %}

@@ -45,19 +45,21 @@
                             <span class="text-muted italic small">Sin complementos</span>
                         {% endif %}
                     </td>
-                    <td class="text-end">
-                        <button type="button" class="btn btn-info btn-sm text-white" onclick="showHistory({{ prod.id }}, '{{ prod.name }}')">
-                            <i class="bi bi-graph-up"></i> Historial
-                        </button>
-                        <button type="button" class="btn btn-warning btn-sm text-dark" data-bs-toggle="modal" data-bs-target="#complementosModal{{ prod.id }}">
-                            <i class="bi bi-gift"></i> Complementos
-                        </button>
-                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#pricesModal{{ prod.id }}">
-                            <i class="bi bi-currency-dollar"></i> Precios
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteProd{{ prod.id }}">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                    <td class="align-middle text-end">
+                        <div class="d-flex justify-content-end gap-2 flex-nowrap">
+                            <button type="button" class="btn btn-info btn-sm text-white" onclick="showHistory({{ prod.id }}, '{{ prod.name }}')">
+                                <i class="bi bi-graph-up"></i> Historial
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm text-dark" data-bs-toggle="modal" data-bs-target="#complementosModal{{ prod.id }}">
+                                <i class="bi bi-gift"></i> Complementos
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#pricesModal{{ prod.id }}">
+                                <i class="bi bi-currency-dollar"></i> Precios
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteProd{{ prod.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
 
                         {{ confirm_modal(
                             id='deleteProd' ~ prod.id,
@@ -113,7 +115,7 @@
                     {% endfor %}
                 </div>
 
-                <div class="modal-body bg-body-tertiary border-top pb-3">
+                <div class="modal-body border-top pb-3">
                     <label class="form-label text-warning fw-bold mb-1">
                         <i class="bi bi-clock-history"></i> Programar Cambio de Precio (Opcional)
                     </label>
@@ -188,7 +190,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="row g-2 mb-3 bg-light-subtle border p-2 rounded align-items-end">
+                    <div class="row g-2 mb-3 bg-dark-subtle border p-2 rounded align-items-end">
                     <div class="col-md-5">
                         <label class="form-label small text-muted mb-1">Desde</label>
                         <input type="date" class="form-control form-control-sm" id="chartFilterDesde">

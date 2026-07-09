@@ -136,3 +136,12 @@ class RoboMerma(db.Model):
     motivo = db.Column(db.String, nullable=False)
     observaciones = db.Column(db.Text)
     fecha_registro = db.Column(db.DateTime, server_default=db.func.current_timestamp())
+
+
+class Config(db.Model):
+    __tablename__ = 'config'
+    __table_args__ = _TABLE_ARGS
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.String(500), nullable=False)

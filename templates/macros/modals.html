@@ -226,6 +226,80 @@
 </div>
 {% endmacro %}
 
+{% macro worker_detail_modal(worker) %}
+<div class="modal fade" id="detailWorker{{ worker[0] }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ worker[2] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-primary text-white">Información Personal</div>
+                            <div class="card-body">
+                                <p class="mb-2"><span class="text-muted">RUT:</span> <span class="fw-bold">{{ worker[1] }}</span></p>
+                                <p class="mb-2"><span class="text-muted">Nombre:</span> <span>{{ worker[2] }}</span></p>
+                                <p class="mb-0"><span class="text-muted">Teléfono:</span> <span>{{ worker[3] }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-info text-dark">Asignación Laboral</div>
+                            <div class="card-body">
+                                <p class="mb-2"><span class="text-muted">Módulo:</span> <span class="badge bg-info text-dark">{{ worker[4] }}</span></p>
+                                <p class="mb-0">
+                                    <span class="text-muted">Jornada:</span>
+                                    <span class="badge {% if worker[6] == 'Full Time' %}bg-success{% else %}bg-secondary{% endif %}">{{ worker[6] }}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-secondary text-white">Datos Bancarios</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><span class="text-muted">Banco:</span> <span>{{ worker[7] or '-' }}</span></p>
+                                        <p class="mb-0"><span class="text-muted">N° Cuenta:</span> <span>{{ worker[8] or '-' }}</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><span class="text-muted">Tipo Cuenta:</span> <span>{{ worker[9] or '-' }}</span></p>
+                                        <p class="mb-0"><span class="text-muted">RUT Cuenta:</span> <span>{{ worker[10] or '-' }}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary"
+                        data-bs-toggle="modal" data-bs-target="#editWorkerModal"
+                        data-bs-dismiss="modal"
+                        data-id="{{ worker[0] }}"
+                        data-rut="{{ worker[1] }}"
+                        data-name="{{ worker[2] }}"
+                        data-phone="{{ worker[3] }}"
+                        data-modulo="{{ worker[5] }}"
+                        data-tipo="{{ worker[6] }}"
+                        data-nombre-banco="{{ worker[7] }}"
+                        data-numero-cuenta="{{ worker[8] }}"
+                        data-tipo-cuenta="{{ worker[9] }}"
+                        data-rut-banco="{{ worker[10] }}">
+                    <i class="bi bi-pencil"></i> Editar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
 {% macro add_worker_modal(modulos, bancos) %}
 <div class="modal fade" id="addWorkerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -453,7 +527,7 @@
                                 </div>
                                 <div>
                                     <span class="text-muted d-block mb-1">Observaciones:</span>
-                                    <p class="mb-0 bg-body-tertiary p-2 rounded border border-secondary text-wrap text-break" style="font-size: 0.9em;">
+                                    <p class="mb-0 bg-dark-subtle p-2 rounded border border-secondary text-wrap text-break" style="font-size: 0.9em;">
                                         {{ rendicion[9] if rendicion[9] else "Sin observaciones." }}
                                     </p>
                                 </div>
@@ -597,7 +671,7 @@
                                             <label class="small text-muted mb-0">Débito</label>
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_debito_{{ rendicion[0] }}" name="venta_debito" value="{{ '{:,.0f}'.format(rendicion[4] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <span class="input-group-text bg-dark-subtle text-muted" style="font-size: 0.7em;">Boletas</span>
                                                 <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_debito" value="{{ rendicion[19] or 0 }}">
                                             </div>
                                         </div>
@@ -605,7 +679,7 @@
                                             <label class="small text-muted mb-0">Crédito</label>
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_credito_{{ rendicion[0] }}" name="venta_credito" value="{{ '{:,.0f}'.format(rendicion[5] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <span class="input-group-text bg-dark-subtle text-muted" style="font-size: 0.7em;">Boletas</span>
                                                 <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_credito" value="{{ rendicion[20] or 0 }}">
                                             </div>
                                         </div>
@@ -613,7 +687,7 @@
                                             <label class="small text-muted mb-0">Mercado Pago</label>
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_mp_{{ rendicion[0] }}" name="venta_mp" value="{{ '{:,.0f}'.format(rendicion[6] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <span class="input-group-text bg-dark-subtle text-muted" style="font-size: 0.7em;">Boletas</span>
                                                 <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_mp" value="{{ rendicion[21] or 0 }}">
                                             </div>
                                         </div>
@@ -621,7 +695,7 @@
                                             <label class="small text-muted mb-0">Efectivo</label>
                                             <input type="text" class="form-control form-control-sm text-end money-input mb-1" id="edit_efectivo_{{ rendicion[0] }}" name="venta_efectivo" value="{{ '{:,.0f}'.format(rendicion[7] or 0).replace(',', '.') }}" oninput="calcTotalEdit({{ rendicion[0] }})">
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-body-tertiary text-muted" style="font-size: 0.7em;">Boletas</span>
+                                                <span class="input-group-text bg-dark-subtle text-muted" style="font-size: 0.7em;">Boletas</span>
                                                 <input type="number" class="form-control text-center bg-body text-body border-secondary" name="boletas_efectivo" value="{{ rendicion[22] or 0 }}">
                                             </div>
                                         </div>
@@ -671,7 +745,7 @@
                 <h5 class="modal-title">Reportes: <span class="text-info">{{ modulo_name }}</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body bg-body-tertiary text-start">
+            <div class="modal-body text-start">
                 <div class="row g-4 mt-1 mb-3">
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm h-100 hover-card">

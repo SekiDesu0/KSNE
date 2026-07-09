@@ -6,7 +6,7 @@ from datetime import date, datetime
 
 from models.models import (
     db, Zona, Modulo, Producto, PrecioHistorico,
-    Worker, Rendicion, RendicionItem, Complemento, ProductoComplemento, RoboMerma,
+    Worker, Rendicion, RendicionItem, Complemento, ProductoComplemento, RoboMerma, Config,
 )
 from utils import (
     admin_required, validate_rut, format_rut, validate_phone,
@@ -689,6 +689,67 @@ def admin_reportes_index():
     )
     modulos = [(m.id, m.name, z.name) for m, z in modulos_rows]
     return render_template('admin_reportes_index.html', modulos=modulos)
+
+
+@admin_bp.route('/reportes/global/consolidado')
+@admin_required
+def report_global_consolidado():
+    fecha_inicio = request.args.get('fecha_inicio', date.today().replace(day=1).isoformat())
+    fecha_fin = request.args.get('fecha_fin', date.today().isoformat())
+    zona_id = request.args.get('zona_id', type=int)
+
+    data = report_service.get_global_consolidado_data(fecha_inicio, fecha_fin, zona_id)
+
+    return render_template('admin_report_global_consolidado.html',
+                           zona_actual=zona_id,
+                           zonas_list=data['zonas'],
+                           ventas_por_zona=data['ventas_por_zona'],
+                           medios_pago=data['medios_pago'],
+                           ventas_diarias=data['ventas_diarias'],
+                           top_modulos=data['top_modulos'],
+                           totales=data['totales'],
+                           fecha_inicio=fecha_inicio,
+                           fecha_fin=fecha_fin)
+
+
+@admin_bp.route('/reportes/metas', methods=['GET', 'POST'])
+@admin_required
+def report_metas():
+    config = Config.query.filter_by(key='metas_porcentaje').first()
+    porcentaje = float(config.value) if config else 10.0
+
+    if request.method == 'POST':
+        try:
+            porcentaje = float(request.form.get('porcentaje', 10))
+        except (ValueError, TypeError):
+            porcentaje = 10.0
+        if config:
+            config.value = str(porcentaje)
+        else:
+            db.session.add(Config(key='metas_porcentaje', value=str(porcentaje)))
+        db.session.commit()
+        mes_post = request.form.get('mes', str(date.today().month))
+        anio_post = request.form.get('anio', str(date.today().year))
+        return redirect(url_for('admin.report_metas', mes=mes_post, anio=anio_post))
+
+    hoy = date.today()
+    mes = int(request.args.get('mes', hoy.month))
+    anio = int(request.args.get('anio', hoy.year))
+
+    data = report_service.get_metas_data(anio, mes, porcentaje)
+
+    meses = [
+        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre'),
+    ]
+
+    return render_template('admin_report_metas.html',
+                           data=data,
+                           porcentaje=porcentaje,
+                           mes_actual=mes,
+                           anio_actual=anio,
+                           meses=meses)
 
 
 @admin_bp.route('/reportes/modulo/<int:modulo_id>')
