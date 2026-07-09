@@ -18,11 +18,13 @@ def worker_dashboard():
             r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
             c_w.name, r.worker_id, r.companion_id, r.modulo_id,
             r.worker_comision, r.companion_comision,
+            c_w2.name, r.companion2_id, r.companion2_comision,
             r.boletas_debito, r.boletas_credito, r.boletas_mp, r.boletas_efectivo
         FROM rendiciones r
         JOIN workers w ON r.worker_id = w.id
         JOIN modulos m ON r.modulo_id = m.id
         LEFT JOIN workers c_w ON r.companion_id = c_w.id
+        LEFT JOIN workers c_w2 ON r.companion2_id = c_w2.id
         WHERE r.worker_id = ? OR r.companion_id = ?
         ORDER BY r.fecha DESC, r.id DESC
     ''', (user_id, user_id))

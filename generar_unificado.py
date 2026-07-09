@@ -216,121 +216,111 @@ def generar_historico_definitivo(dias_atras=1460): # 4 años de datos histórico
             if not workers_modulo:
                 continue
                 
-            num_turnos = random.randint(1, 2)
-            turnos_a_hacer = [True, False] if num_turnos == 2 else [random.choice([True, False])]
-            
-            for es_manana in turnos_a_hacer:
-                # Reemplazos (15%)
-                es_reemplazo = random.random() < 0.15
-                if es_reemplazo and len(todos_los_trabajadores) > len(workers_modulo):
-                    posibles_reemplazos = [w for w in todos_los_trabajadores if w not in workers_modulo]
-                    worker_id = random.choice(posibles_reemplazos)
-                else:
-                    worker_id = random.choice(workers_modulo)
-                
-                if es_manana:
-                    hora_entrada = f"{random.randint(8, 10):02d}:{random.choice(['00', '30'])}"
-                    hora_salida = f"{random.randint(14, 16):02d}:{random.choice(['00', '30'])}"
-                else:
-                    hora_entrada = f"{random.randint(13, 15):02d}:{random.choice(['00', '30'])}"
-                    hora_salida = f"{random.randint(19, 21):02d}:{random.choice(['00', '30'])}"
+            worker_id = random.choice(workers_modulo)
 
-                worker_tipo = workers_tipo.get(worker_id, "Part Time")
-                worker_comision = 1 if worker_tipo == "Full Time" else random.choice([0, 1])
+            es_manana = random.choice([True, False])
+            if es_manana:
+                hora_entrada = f"{random.randint(8, 10):02d}:{random.choice(['00', '30'])}"
+                hora_salida = f"{random.randint(14, 16):02d}:{random.choice(['00', '30'])}"
+            else:
+                hora_entrada = f"{random.randint(13, 15):02d}:{random.choice(['00', '30'])}"
+                hora_salida = f"{random.randint(19, 21):02d}:{random.choice(['00', '30'])}"
 
-                # Acompañante (70%)
-                companion_id = None
-                comp_in, comp_out = None, None
+            worker_tipo = workers_tipo.get(worker_id, "Part Time")
+            worker_comision = 1 if worker_tipo == "Full Time" else random.choice([0, 1])
+
+            # Acompañante (70%)
+            companion_id = None
+            comp_in, comp_out = None, None
+            companion_comision = 0
+            companion2_id = None
+            companion2_comision = 0
+            if random.random() < 0.70:
+                posibles_comp = [w for w in workers_modulo if w != worker_id]
+                if posibles_comp:
+                    companion_id = random.choice(posibles_comp)
+                    comp_in, comp_out = hora_entrada, hora_salida
+                    comp_tipo = workers_tipo.get(companion_id, "Part Time")
+                    companion_comision = 1 if comp_tipo == "Full Time" else random.choice([0, 1])
+
+                    # Acompañante 2 (25% probability if companion 1 is present)
+                    if random.random() < 0.25:
+                        posibles_comp2 = [w for w in posibles_comp if w != companion_id]
+                        if posibles_comp2:
+                            companion2_id = random.choice(posibles_comp2)
+                            comp2_tipo = workers_tipo.get(companion2_id, "Part Time")
+                            companion2_comision = 1 if comp2_tipo == "Full Time" else random.choice([0, 1])
+
+            # If there is no companion, comision should be disabled (0)
+            if companion_id is None:
                 companion_comision = 0
-                companion2_id = None
+            if companion2_id is None:
                 companion2_comision = 0
-                if random.random() < 0.70:
-                    posibles_comp = [w for w in workers_modulo if w != worker_id]
-                    if posibles_comp:
-                        companion_id = random.choice(posibles_comp)
-                        comp_in, comp_out = hora_entrada, hora_salida
-                        comp_tipo = workers_tipo.get(companion_id, "Part Time")
-                        companion_comision = 1 if comp_tipo == "Full Time" else random.choice([0, 1])
-                        
-                        # Acompañante 2 (25% probability if companion 1 is present)
-                        if random.random() < 0.25:
-                            posibles_comp2 = [w for w in posibles_comp if w != companion_id]
-                            if posibles_comp2:
-                                companion2_id = random.choice(posibles_comp2)
-                                comp2_tipo = workers_tipo.get(companion2_id, "Part Time")
-                                companion2_comision = 1 if comp2_tipo == "Full Time" else random.choice([0, 1])
-                
-                # If there is no companion, comision should be disabled (0)
-                if companion_id is None:
-                    companion_comision = 0
-                if companion2_id is None:
-                    companion2_comision = 0
-                
-                num_prods = random.randint(1, 5)
-                prods_elegidos = random.sample(productos, min(num_prods, len(productos)))
-                items_a_insertar = []
-                total_calculado = 0
-                
-                for prod in prods_elegidos:
-                    p_id, p_price, p_comm = prod
-                    cantidad = random.randint(1, 6)
-                    items_a_insertar.append((p_id, cantidad, p_price, p_comm))
-                    total_calculado += (p_price * cantidad)
 
-                debito, credito, mp, efectivo = 0, 0, 0, 0
-                b_debito, b_credito, b_mp, b_efectivo = 0, 0, 0, 0
-                
-                divisiones = random.randint(1, 3)
-                monto_restante = int(total_calculado)
-                metodos = ["debito", "credito", "mp", "efectivo"]
-                random.shuffle(metodos)
-                
-                for idx, metodo in enumerate(metodos[:divisiones]):
-                    monto = monto_restante if idx == divisiones - 1 else random.randint(0, monto_restante // 2)
-                    monto_restante -= monto
-                    
-                    if monto > 0:
-                        boletas = random.randint(1, 4)
-                        if metodo == "debito": debito, b_debito = monto, boletas
-                        elif metodo == "credito": credito, b_credito = monto, boletas
-                        elif metodo == "mp": mp, b_mp = monto, boletas
-                        elif metodo == "efectivo": efectivo, b_efectivo = monto, boletas
+            num_prods = random.randint(1, 5)
+            prods_elegidos = random.sample(productos, min(num_prods, len(productos)))
+            items_a_insertar = []
+            total_calculado = 0
 
-                tipo_registro = "Reemplazo histórico" if es_reemplazo else "Turno histórico"
-                
-                # === LÓGICA DE GASTOS RANDOM ===
-                # 15% de probabilidad de tener un gasto en el turno (entre $2.000 y $15.000)
-                gastos = 0
-                if random.random() < 0.15:
-                    gastos = random.randint(2, 15) * 1000
-                    tipo_registro += f" | {random.choice(motivos_gastos)}"
+            for prod in prods_elegidos:
+                p_id, p_price, p_comm = prod
+                cantidad = random.randint(1, 6)
+                items_a_insertar.append((p_id, cantidad, p_price, p_comm))
+                total_calculado += (p_price * cantidad)
 
+            debito, credito, mp, efectivo = 0, 0, 0, 0
+            b_debito, b_credito, b_mp, b_efectivo = 0, 0, 0, 0
+
+            divisiones = random.randint(1, 3)
+            monto_restante = int(total_calculado)
+            metodos = ["debito", "credito", "mp", "efectivo"]
+            random.shuffle(metodos)
+
+            for idx, metodo in enumerate(metodos[:divisiones]):
+                monto = monto_restante if idx == divisiones - 1 else random.randint(0, monto_restante // 2)
+                monto_restante -= monto
+
+                if monto > 0:
+                    boletas = max(1, min(4, monto // 15000))
+                    if metodo == "debito": debito, b_debito = monto, boletas
+                    elif metodo == "credito": credito, b_credito = monto, boletas
+                    elif metodo == "mp": mp, b_mp = monto, boletas
+                    elif metodo == "efectivo": efectivo, b_efectivo = monto, boletas
+
+            tipo_registro = "Turno histórico"
+
+            # 15% de probabilidad de tener un gasto en el turno (entre $2.000 y $15.000)
+            gastos = 0
+            if random.random() < 0.15:
+                gastos = random.randint(2, 15) * 1000
+                tipo_registro += f" | {random.choice(motivos_gastos)}"
+
+            c.execute('''
+                INSERT INTO rendiciones 
+                (worker_id, worker_comision, companion_id, companion2_id, modulo_id, fecha,
+                 hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
+                 companion_comision, companion2_comision,
+                 venta_debito, venta_credito, venta_mp, venta_efectivo,
+                 boletas_debito, boletas_credito, boletas_mp, boletas_efectivo,
+                 gastos, observaciones)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (worker_id, worker_comision, companion_id, companion2_id, modulo_id, fecha_str,
+                  hora_entrada, hora_salida, comp_in, comp_out,
+                  companion_comision, companion2_comision,
+                  debito, credito, mp, efectivo,
+                  b_debito, b_credito, b_mp, b_efectivo,
+                  gastos, tipo_registro))
+
+            r_id = c.lastrowid
+
+            for item in items_a_insertar:
+                p_id, cant, p_price, p_comm = item
                 c.execute('''
-                    INSERT INTO rendiciones 
-                    (worker_id, worker_comision, companion_id, companion2_id, modulo_id, fecha,
-                     hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                     companion_comision, companion2_comision,
-                     venta_debito, venta_credito, venta_mp, venta_efectivo,
-                     boletas_debito, boletas_credito, boletas_mp, boletas_efectivo,
-                     gastos, observaciones)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (worker_id, worker_comision, companion_id, companion2_id, modulo_id, fecha_str,
-                      hora_entrada, hora_salida, comp_in, comp_out,
-                      companion_comision, companion2_comision,
-                      debito, credito, mp, efectivo,
-                      b_debito, b_credito, b_mp, b_efectivo,
-                      gastos, tipo_registro))
-                
-                r_id = c.lastrowid
-                
-                for item in items_a_insertar:
-                    p_id, cant, p_price, p_comm = item
-                    c.execute('''
-                        INSERT INTO rendicion_items (rendicion_id, producto_id, cantidad, precio_historico, comision_historica)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', (r_id, p_id, cant, p_price, p_comm))
-                    
-                rendiciones_creadas += 1
+                    INSERT INTO rendicion_items (rendicion_id, producto_id, cantidad, precio_historico, comision_historica)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (r_id, p_id, cant, p_price, p_comm))
+
+            rendiciones_creadas += 1
 
     conn.commit()
     print(f"Éxito: Se inyectaron {rendiciones_creadas} rendiciones para TODOS los módulos.")

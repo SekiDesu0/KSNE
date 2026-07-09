@@ -427,7 +427,7 @@
                                                 <td colspan="3" class="text-end fw-bold">Total Calculado por Sistema:</td>
                                                 <td class="text-end fw-bold fs-6">${{ "{:,.0f}".format(total_calculado or 0).replace(',', '.') }}</td>
                                                 <td class="text-end fw-bold text-success fs-6">
-                                                    {% if not rendicion[14] and not rendicion[15] %}
+                                                    {% if not rendicion[14] and not rendicion[15] and not rendicion[18] %}
                                                         <span class="text-decoration-line-through text-muted">${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}</span>
                                                     {% else %}
                                                         ${{ "{:,.0f}".format(comision_total or 0).replace(',', '.') }}

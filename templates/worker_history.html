@@ -36,7 +36,7 @@
                         <td class="align-middle"><span class="badge bg-info text-dark">{{ r[3] }}</span></td>
                         
                         <td class="align-middle d-none d-sm-table-cell">
-                            {% if r[17] == 'Titular' %}
+                            {% if r[26] == 'Titular' %}
                                 <span class="badge bg-primary">Titular</span>
                             {% else %}
                                 <span class="badge bg-secondary">Acompañante</span>
@@ -59,7 +59,7 @@
                             <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#viewRendicion{{ r[0] }}" title="Ver Detalle">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            {{ rendicion_detail_modal(r, r[20], r[21], r[22]) }}
+                            {{ rendicion_detail_modal(r, r[23], r[24], r[25]) }}
                         </td>
                     </tr>
                     {% else %}
