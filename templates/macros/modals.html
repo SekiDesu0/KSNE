@@ -758,7 +758,7 @@
                                     <h5 class="card-title mb-0">Robos y Mermas</h5>
                                 </div>
                                 <p class="text-muted small flex-grow-1">Cuadratura de inventario y registro de pérdida de productos.</p>
-                                <a href="{{ url_for('admin.report_modulo_robos_mermas', modulo_id=modulo_id) }}" class="btn btn-outline-danger w-100 mt-3">Generar Reporte</a>
+                                <a href="{{ url_for('admin.report_modulo_robos_mermas', modulo_id=modulo_id) }}" class="btn btn-danger w-100 mt-3">Generar Reporte</a>
                             </div>
                         </div>
                     </div>
@@ -787,7 +787,7 @@
 </div>
 {% endmacro %}
 
-{% macro report_filters(action_url, workers, selected_worker, fecha_inicio, fecha_fin) %}
+{% macro report_filters(action_url, workers, selected_worker, fecha_inicio, fecha_fin, show_worker=True) %}
 <div class="card shadow-sm mb-4 border-0 bg-dark-subtle">
     <div class="card-body p-3">
         <form method="GET" action="{{ action_url }}" class="row g-2 align-items-end">
@@ -799,6 +799,7 @@
                 <label class="form-label small text-muted mb-1">Hasta</label>
                 <input type="date" name="fecha_fin" class="form-control form-control-sm" value="{{ fecha_fin }}">
             </div>
+            {% if show_worker %}
             <div class="col-md-3">
                 <label class="form-label small text-muted mb-1">Trabajador</label>
                 <select name="worker_id" class="form-select form-select-sm">
@@ -808,6 +809,7 @@
                     {% endfor %}
                 </select>
             </div>
+            {% endif %}
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-filter"></i> Aplicar Filtros</button>
             </div>
