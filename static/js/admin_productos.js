@@ -40,16 +40,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    window.toggleNuevoComplementoInput = function(prodId, selectEl) {
-        const wrapper = document.getElementById(`nuevo_comp_wrapper_${prodId}`);
-        if (wrapper) {
-            if (selectEl.value === '__nuevo__') {
-                wrapper.style.display = 'block';
-                wrapper.querySelector('input').setAttribute('required', 'required');
-            } else {
-                wrapper.style.display = 'none';
-                wrapper.querySelector('input').removeAttribute('required');
+    window.updateComplementoCantidad = function(input) {
+        const assocId = input.getAttribute('data-assoc-id');
+        const cantidad = parseInt(input.value) || 1;
+        if (cantidad < 1) input.value = 1;
+
+        fetch(`/admin/productos/complementos/update/${assocId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `cantidad=${cantidad}`,
+        }).then(r => r.json()).then(data => {
+            if (data.ok) {
+                input.value = data.cantidad;
             }
-        }
+        });
     };
 });

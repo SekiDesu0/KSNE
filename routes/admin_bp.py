@@ -408,22 +408,21 @@ def delete_product(id):
 @admin_bp.route('/productos/<int:prod_id>/complementos/add', methods=['POST'])
 @admin_required
 def add_producto_complemento(prod_id):
-    comp_id = request.form.get('complemento_id')
+    comp_id = request.form.get('complemento_id', '').strip()
     comp_name_nuevo = request.form.get('complemento_nombre_nuevo', '').strip()
     cantidad = int(request.form.get('cantidad', 1) or 1)
 
-    if comp_id == '__nuevo__':
-        if not comp_name_nuevo:
-            flash("Debes ingresar el nombre del nuevo complemento.", "danger")
-            return redirect(url_for('admin.manage_products'))
-        
+    if comp_name_nuevo and not comp_id:
         comp = Complemento.query.filter_by(name=comp_name_nuevo).first()
         if not comp:
             comp = Complemento(name=comp_name_nuevo)
             db.session.add(comp)
             db.session.flush()
-    else:
+    elif comp_id:
         comp = db.session.get(Complemento, int(comp_id))
+    else:
+        flash("Debes seleccionar un complemento o ingresar uno nuevo.", "danger")
+        return redirect(url_for('admin.manage_products'))
 
     if not comp:
         flash("Complemento no encontrado.", "danger")
@@ -449,6 +448,36 @@ def delete_producto_complemento(assoc_id):
         db.session.delete(assoc)
         db.session.commit()
         flash("Complemento desvinculado del producto.", "info")
+    return redirect(url_for('admin.manage_products'))
+
+
+@admin_bp.route('/productos/complementos/update/<int:assoc_id>', methods=['POST'])
+@admin_required
+def update_producto_complemento_cantidad(assoc_id):
+    assoc = db.session.get(ProductoComplemento, assoc_id)
+    if assoc:
+        try:
+            cantidad = int(request.form.get('cantidad', 1))
+            if cantidad < 1:
+                cantidad = 1
+            assoc.cantidad = cantidad
+            db.session.commit()
+            return jsonify({'ok': True, 'cantidad': cantidad})
+        except (ValueError, TypeError):
+            return jsonify({'ok': False, 'error': 'Invalid cantidad'}), 400
+    return jsonify({'ok': False, 'error': 'Not found'}), 404
+
+
+@admin_bp.route('/complementos/delete/<int:comp_id>', methods=['POST'])
+@admin_required
+def delete_complemento(comp_id):
+    comp = db.session.get(Complemento, comp_id)
+    if comp:
+        ProductoComplemento.query.filter_by(complemento_id=comp_id).delete()
+        nombre = comp.name
+        db.session.delete(comp)
+        db.session.commit()
+        flash(f"Complemento '{nombre}' eliminado del catálogo.", "info")
     return redirect(url_for('admin.manage_products'))
 
 

@@ -38,11 +38,9 @@
                     <td class="align-middle fw-bold">{{ prod.name }}</td>
                     <td class="align-middle">
                         {% if prod.complementos %}
-                            {% for comp in prod.complementos %}
-                                <span class="badge bg-secondary mb-1" style="font-size: 0.85em;">{{ comp.name }} (x{{ comp.cantidad }})</span>
-                            {% endfor %}
+                            <span class="badge bg-info text-dark">{{ prod.complementos|length }} complemento{{ 's' if prod.complementos|length != 1 }}</span>
                         {% else %}
-                            <span class="text-muted italic small">Sin complementos</span>
+                            <span class="text-muted small">Sin complementos</span>
                         {% endif %}
                     </td>
                     <td class="align-middle text-end">
