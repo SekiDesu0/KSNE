@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function checkWarnings() {
-        const totalProductos = getVal('total_productos_calc');
+        const totalProductos = displayTotalProductos ? (parseInt(displayTotalProductos.dataset.raw) || 0) : 0;
         const totalDeclarado = getVal('total_general');
         const gastos = getVal('gastos');
         const efectivo = getVal('venta_efectivo');
@@ -67,7 +67,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 granTotal += (cantidad * precio);
             }
         });
-        displayTotalProductos.value = granTotal.toLocaleString('es-CL');
+        displayTotalProductos.textContent = granTotal.toLocaleString('es-CL');
+        displayTotalProductos.dataset.raw = granTotal;
         checkWarnings();
     }
 

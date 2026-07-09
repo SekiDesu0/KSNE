@@ -94,3 +94,64 @@ def get_filtered_rendiciones(fecha_inicio, fecha_fin, zona_id, modulo_id):
         rendiciones_completas.append(tuple(r) + (items, total_calculado, comision_total))
 
     return rendiciones_completas
+
+
+def get_worker_rendiciones(worker_id):
+    Companion = aliased(Worker)
+    Companion2 = aliased(Worker)
+
+    rendiciones = db.session.query(
+        Rendicion.id,
+        Rendicion.fecha,
+        Worker.name.label('worker_name'),
+        Modulo.name.label('modulo_name'),
+        Rendicion.venta_debito, Rendicion.venta_credito,
+        Rendicion.venta_mp, Rendicion.venta_efectivo,
+        Rendicion.gastos, Rendicion.observaciones,
+        Companion.name.label('companion_name'),
+        Rendicion.worker_id, Rendicion.companion_id, Rendicion.modulo_id,
+        Rendicion.worker_comision, Rendicion.companion_comision,
+        Companion2.name.label('companion2_name'),
+        Rendicion.companion2_id, Rendicion.companion2_comision,
+        Rendicion.boletas_debito, Rendicion.boletas_credito,
+        Rendicion.boletas_mp, Rendicion.boletas_efectivo,
+    ).join(Worker, Rendicion.worker_id == Worker.id
+    ).join(Modulo, Rendicion.modulo_id == Modulo.id
+    ).outerjoin(Companion, Rendicion.companion_id == Companion.id
+    ).outerjoin(Companion2, Rendicion.companion2_id == Companion2.id
+    ).filter(
+        db.or_(Rendicion.worker_id == worker_id, Rendicion.companion_id == worker_id),
+    ).order_by(Rendicion.fecha.desc(), Rendicion.id.desc()).all()
+
+    if not rendiciones:
+        return []
+
+    rendicion_ids = [r.id for r in rendiciones]
+    items_rows = db.session.query(
+        Producto.name,
+        RendicionItem.cantidad,
+        RendicionItem.precio_historico,
+        RendicionItem.comision_historica,
+        (RendicionItem.cantidad * RendicionItem.precio_historico).label('total_linea'),
+        (RendicionItem.cantidad * RendicionItem.comision_historica).label('total_comision'),
+        RendicionItem.id,
+        RendicionItem.rendicion_id,
+    ).join(Producto, RendicionItem.producto_id == Producto.id
+    ).filter(RendicionItem.rendicion_id.in_(rendicion_ids)).all()
+
+    items_by_rendicion = {}
+    for it in items_rows:
+        items_by_rendicion.setdefault(it.rendicion_id, []).append(
+            (it[0], it[1], it[2], it[3], it.total_linea, it.total_comision, it.id),
+        )
+
+    rendiciones_completas = []
+    for r in rendiciones:
+        items = items_by_rendicion.get(r.id, [])
+        total_calculado = sum(item[4] for item in items)
+        comision_total = sum(item[5] for item in items)
+        rol = "Titular" if r.worker_id == worker_id else "Acompañante"
+        base = tuple(r)
+        rendiciones_completas.append(base + (items, total_calculado, comision_total, rol))
+
+    return rendiciones_completas

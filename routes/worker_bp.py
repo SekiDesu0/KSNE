@@ -1,76 +1,32 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from datetime import date
-from database import get_db_connection
+from sqlalchemy import func
+
+from models.models import db, Worker, Modulo, Zona, Producto, PrecioHistorico, Rendicion, RendicionItem, RoboMerma
+from services import rendiciones_service
 from utils import login_required
 
 worker_bp = Blueprint('worker', __name__)
 
+
 @worker_bp.route('/dashboard')
 @login_required
 def worker_dashboard():
-    conn = get_db_connection()
-    c = conn.cursor()
-
     user_id = session['user_id']
+    rendiciones = rendiciones_service.get_worker_rendiciones(user_id)
+    return render_template('worker_history.html', rendiciones=rendiciones)
 
-    c.execute('''
-        SELECT r.id, r.fecha, w.name, m.name,
-            r.venta_debito, r.venta_credito, r.venta_mp, r.venta_efectivo, r.gastos, r.observaciones,
-            c_w.name, r.worker_id, r.companion_id, r.modulo_id,
-            r.worker_comision, r.companion_comision,
-            c_w2.name, r.companion2_id, r.companion2_comision,
-            r.boletas_debito, r.boletas_credito, r.boletas_mp, r.boletas_efectivo
-        FROM rendiciones r
-        JOIN workers w ON r.worker_id = w.id
-        JOIN modulos m ON r.modulo_id = m.id
-        LEFT JOIN workers c_w ON r.companion_id = c_w.id
-        LEFT JOIN workers c_w2 ON r.companion2_id = c_w2.id
-        WHERE r.worker_id = ? OR r.companion_id = ?
-        ORDER BY r.fecha DESC, r.id DESC
-    ''', (user_id, user_id))
-    rendiciones_basicas = c.fetchall()
-
-    rendiciones_completas = []
-    for r in rendiciones_basicas:
-        c.execute('''
-            SELECT p.name, ri.cantidad, ri.precio_historico, ri.comision_historica,
-                   (ri.cantidad * ri.precio_historico) as total_linea,
-                   (ri.cantidad * ri.comision_historica) as total_comision
-            FROM rendicion_items ri
-            JOIN productos p ON ri.producto_id = p.id
-            WHERE ri.rendicion_id = ?
-        ''', (r[0],))
-        items = c.fetchall()
-
-        total_calculado = sum(item[4] for item in items)
-        comision_total = sum(item[5] for item in items)
-
-        rol = "Titular" if r[11] == user_id else "Acompañante"
-
-        r_completa = r + (items, total_calculado, comision_total, rol)
-        rendiciones_completas.append(r_completa)
-
-    conn.close()
-    return render_template('worker_history.html', rendiciones=rendiciones_completas)
 
 @worker_bp.route('/rendicion/nueva', methods=['GET', 'POST'])
 @login_required
 def new_rendicion():
-    conn = get_db_connection()
-    c = conn.cursor()
+    user_id = session['user_id']
+    worker = Worker.query.get(user_id)
+    modulo = Modulo.query.get(worker.modulo_id)
+    zona = Zona.query.get(modulo.zona_id)
 
-    c.execute('''SELECT w.modulo_id, m.name, z.id, z.name
-                 FROM workers w
-                 JOIN modulos m ON w.modulo_id = m.id
-                 JOIN zonas z ON m.zona_id = z.id
-                 WHERE w.id = ?''', (session['user_id'],))
-    worker_info = c.fetchone()
-
-    if not worker_info:
-        conn.close()
+    if not worker or not modulo:
         return "Error: No tienes un módulo asignado. Contacta al administrador."
-
-    modulo_id, modulo_name, zona_id, zona_name = worker_info
 
     if request.method == 'POST':
         fecha = request.form.get('fecha')
@@ -104,131 +60,135 @@ def new_rendicion():
             companion_hora_entrada = None
             companion_hora_salida = None
 
-        if debito is None or credito is None or mp is None or efectivo is None or not fecha or not hora_entrada or not hora_salida:
+        if not all([debito is not None, credito is not None, mp is not None, efectivo is not None,
+                    fecha, hora_entrada, hora_salida]):
             flash("Error: Todos los campos obligatorios deben estar rellenos.", "danger")
             return redirect(url_for('worker.new_rendicion'))
 
-        c.execute("SELECT tipo FROM workers WHERE id = ?", (session['user_id'],))
-        worker_tipo = c.fetchone()[0]
-        worker_comision = 1 if worker_tipo == 'Full Time' else 0
+        worker_comision = 1 if worker.tipo == 'Full Time' else 0
 
         companion_comision = 0
         if companion_id:
-            c.execute("SELECT tipo FROM workers WHERE id = ?", (companion_id,))
-            comp_tipo = c.fetchone()
-            if comp_tipo and comp_tipo[0] == 'Full Time':
+            companion = Worker.query.get(companion_id)
+            if companion and companion.tipo == 'Full Time':
                 companion_comision = 1
 
         total_digital = debito + credito + mp
         total_ventas_general = total_digital + efectivo
 
-        c.execute('''INSERT INTO rendiciones
-                    (worker_id, companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                    venta_debito, venta_credito, venta_mp, venta_efectivo, boletas_debito, boletas_credito, boletas_mp, boletas_efectivo, gastos, observaciones, worker_comision, companion_comision)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                    (session['user_id'], companion_id, modulo_id, fecha, hora_entrada, hora_salida, companion_hora_entrada, companion_hora_salida,
-                debito, credito, mp, efectivo, bol_debito, bol_credito, bol_mp, bol_efectivo, gastos, obs, worker_comision, companion_comision))
-
-        rendicion_id = c.lastrowid
+        rendicion = Rendicion(
+            worker_id=user_id,
+            companion_id=int(companion_id) if companion_id else None,
+            modulo_id=worker.modulo_id,
+            fecha=date.fromisoformat(fecha),
+            hora_entrada=hora_entrada,
+            hora_salida=hora_salida,
+            companion_hora_entrada=companion_hora_entrada or None,
+            companion_hora_salida=companion_hora_salida or None,
+            venta_debito=debito,
+            venta_credito=credito,
+            venta_mp=mp,
+            venta_efectivo=efectivo,
+            boletas_debito=bol_debito,
+            boletas_credito=bol_credito,
+            boletas_mp=bol_mp,
+            boletas_efectivo=bol_efectivo,
+            gastos=gastos,
+            observaciones=obs,
+            worker_comision=bool(worker_comision),
+            companion_comision=bool(companion_comision),
+        )
+        db.session.add(rendicion)
+        db.session.flush()
 
         for key, value in request.form.items():
             if key.startswith('qty_') and value and int(value) > 0:
                 prod_id = int(key.split('_')[1])
                 cantidad = int(value)
 
-                # Buscar el precio vigente al momento de la venta
-                c.execute('''
-                    SELECT price, commission
-                    FROM precios_historicos
-                    WHERE producto_id = ? AND zona_id = ?
-                    AND fecha_activacion <= datetime('now', 'localtime')
-                    ORDER BY fecha_activacion DESC LIMIT 1
-                ''', (prod_id, zona_id))
-                prod_data = c.fetchone()
+                ph = PrecioHistorico.query.filter(
+                    PrecioHistorico.producto_id == prod_id,
+                    PrecioHistorico.zona_id == zona.id,
+                    PrecioHistorico.fecha_activacion <= func.now(),
+                ).order_by(PrecioHistorico.fecha_activacion.desc()).first()
 
-                if prod_data:
-                    c.execute('''INSERT INTO rendicion_items
-                                 (rendicion_id, producto_id, cantidad, precio_historico, comision_historica)
-                                 VALUES (?, ?, ?, ?, ?)''',
-                              (rendicion_id, prod_id, cantidad, prod_data[0], prod_data[1]))
+                if ph:
+                    db.session.add(RendicionItem(
+                        rendicion_id=rendicion.id,
+                        producto_id=prod_id,
+                        cantidad=cantidad,
+                        precio_historico=ph.price,
+                        comision_historica=ph.commission,
+                    ))
 
-        conn.commit()
+        db.session.commit()
         flash(f"Rendición enviada exitosamente. Total General Declarado: ${total_ventas_general:,}".replace(',', '.'), "success")
         return redirect(url_for('worker.worker_dashboard'))
 
-    c.execute('''
-                SELECT id, name FROM workers
-                WHERE id != ? AND modulo_id = ? AND is_admin = 0
-                ORDER BY name
-            ''', (session['user_id'], modulo_id))
-    otros_trabajadores = c.fetchall()
+    otros_trabajadores = Worker.query.filter(
+        Worker.id != user_id,
+        Worker.modulo_id == worker.modulo_id,
+        Worker.is_admin == False,
+    ).order_by(Worker.name).all()
+    otros = [(w.id, w.name) for w in otros_trabajadores]
 
-    # Buscar solo el precio vigente actual para esta zona
-    c.execute('''
-        SELECT p.id, p.name, ph.price, ph.commission
-        FROM productos p
-        JOIN precios_historicos ph ON p.id = ph.producto_id
-        WHERE ph.zona_id = ?
-          AND ph.fecha_activacion = (
-              SELECT MAX(fecha_activacion)
-              FROM precios_historicos
-              WHERE producto_id = p.id AND zona_id = ?
-              AND fecha_activacion <= datetime('now', 'localtime')
-          )
-        ORDER BY p.name
-    ''', (zona_id, zona_id)) # Nota: zona_id se pasa dos veces
-    productos = c.fetchall()
-    conn.close()
+    latest_prices = db.session.query(
+        PrecioHistorico.producto_id,
+        func.max(PrecioHistorico.fecha_activacion).label('max_fecha'),
+    ).filter(
+        PrecioHistorico.zona_id == zona.id,
+        PrecioHistorico.fecha_activacion <= func.now(),
+    ).group_by(PrecioHistorico.producto_id).subquery()
 
-    has_commission = any(prod[3] > 0 for prod in productos)
+    productos_rows = db.session.query(
+        Producto.id, Producto.name, PrecioHistorico.price, PrecioHistorico.commission,
+    ).join(PrecioHistorico, Producto.id == PrecioHistorico.producto_id).join(
+        latest_prices,
+        db.and_(
+            PrecioHistorico.producto_id == latest_prices.c.producto_id,
+            PrecioHistorico.fecha_activacion == latest_prices.c.max_fecha,
+            PrecioHistorico.zona_id == zona.id,
+        )
+    ).order_by(Producto.name).all()
+    productos = [(p.id, p.name, p.price, p.commission) for p in productos_rows]
+
+    has_commission = any(p[3] > 0 for p in productos)
 
     return render_template('worker_dashboard.html',
-                           modulo_name=modulo_name,
-                           zona_name=zona_name,
+                           modulo_name=modulo.name,
+                           zona_name=zona.name,
                            productos=productos,
                            has_commission=has_commission,
-                           otros_trabajadores=otros_trabajadores,
+                           otros_trabajadores=otros,
                            today=date.today().strftime('%Y-%m-%d'))
 
 
 @worker_bp.route('/robos-mermas')
 @login_required
 def historial_robos_mermas():
-    conn = get_db_connection()
-    c = conn.cursor()
+    user_id = session['user_id']
+    reportes_rows = db.session.query(
+        RoboMerma.id, RoboMerma.fecha, Modulo.name,
+        Producto.name, RoboMerma.cantidad, RoboMerma.motivo, RoboMerma.observaciones,
+    ).join(Modulo, RoboMerma.modulo_id == Modulo.id
+    ).join(Producto, RoboMerma.producto_id == Producto.id
+    ).filter(RoboMerma.worker_id == user_id
+    ).order_by(RoboMerma.fecha.desc(), RoboMerma.id.desc()).all()
 
-    c.execute('''
-        SELECT rm.id, rm.fecha, m.name, p.name, rm.cantidad, rm.motivo, rm.observaciones
-        FROM robos_mermas rm
-        JOIN modulos m ON rm.modulo_id = m.id
-        JOIN productos p ON rm.producto_id = p.id
-        WHERE rm.worker_id = ?
-        ORDER BY rm.fecha DESC, rm.id DESC
-    ''', (session['user_id'],))
-    reportes = c.fetchall()
-    conn.close()
-
+    reportes = [tuple(r) for r in reportes_rows]
     return render_template('worker_robos_mermas_history.html', reportes=reportes)
 
 
 @worker_bp.route('/robos-mermas/reportar', methods=['GET', 'POST'])
 @login_required
 def reportar_robo_merma():
-    conn = get_db_connection()
-    c = conn.cursor()
+    user_id = session['user_id']
+    worker = Worker.query.get(user_id)
+    modulo = Modulo.query.get(worker.modulo_id)
+    zona = Zona.query.get(modulo.zona_id)
 
-    c.execute('''SELECT w.modulo_id, m.name, z.id, z.name
-                 FROM workers w
-                 JOIN modulos m ON w.modulo_id = m.id
-                 JOIN zonas z ON m.zona_id = z.id
-                 WHERE w.id = ?''', (session['user_id'],))
-    worker_info = c.fetchone()
-
-    if not worker_info:
-        conn.close()
+    if not worker or not modulo:
         return "Error: No tienes un módulo asignado. Contacta al administrador."
-
-    modulo_id, modulo_name, zona_id, zona_name = worker_info
 
     if request.method == 'POST':
         fecha = request.form.get('fecha')
@@ -246,34 +206,43 @@ def reportar_robo_merma():
                 motivo = request.form.get(f'motivo_{prod_id}')
 
                 if motivo in ('robo', 'merma'):
-                    c.execute('''INSERT INTO robos_mermas
-                                 (worker_id, modulo_id, fecha, producto_id, cantidad, motivo, observaciones)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                              (session['user_id'], modulo_id, fecha, prod_id, cantidad, motivo, obs_general))
+                    db.session.add(RoboMerma(
+                        worker_id=user_id,
+                        modulo_id=worker.modulo_id,
+                        fecha=date.fromisoformat(fecha),
+                        producto_id=prod_id,
+                        cantidad=cantidad,
+                        motivo=motivo,
+                        observaciones=obs_general,
+                    ))
                     items_guardados += 1
 
-        conn.commit()
+        db.session.commit()
         flash(f"Reporte enviado exitosamente. {items_guardados} producto(s) registrado(s).", "success")
         return redirect(url_for('worker.historial_robos_mermas'))
 
-    c.execute('''
-        SELECT p.id, p.name, ph.price
-        FROM productos p
-        JOIN precios_historicos ph ON p.id = ph.producto_id
-        WHERE ph.zona_id = ?
-          AND ph.fecha_activacion = (
-              SELECT MAX(fecha_activacion)
-              FROM precios_historicos
-              WHERE producto_id = p.id AND zona_id = ?
-              AND fecha_activacion <= datetime('now', 'localtime')
-          )
-        ORDER BY p.name
-    ''', (zona_id, zona_id))
-    productos = c.fetchall()
-    conn.close()
+    latest_prices = db.session.query(
+        PrecioHistorico.producto_id,
+        func.max(PrecioHistorico.fecha_activacion).label('max_fecha'),
+    ).filter(
+        PrecioHistorico.zona_id == zona.id,
+        PrecioHistorico.fecha_activacion <= func.now(),
+    ).group_by(PrecioHistorico.producto_id).subquery()
+
+    productos_rows = db.session.query(
+        Producto.id, Producto.name, PrecioHistorico.price,
+    ).join(PrecioHistorico, Producto.id == PrecioHistorico.producto_id).join(
+        latest_prices,
+        db.and_(
+            PrecioHistorico.producto_id == latest_prices.c.producto_id,
+            PrecioHistorico.fecha_activacion == latest_prices.c.max_fecha,
+            PrecioHistorico.zona_id == zona.id,
+        )
+    ).order_by(Producto.name).all()
+    productos = [(p.id, p.name, p.price) for p in productos_rows]
 
     return render_template('worker_robos_mermas.html',
-                           modulo_name=modulo_name,
-                           zona_name=zona_name,
+                           modulo_name=modulo.name,
+                           zona_name=zona.name,
                            productos=productos,
                            today=date.today().strftime('%Y-%m-%d'))

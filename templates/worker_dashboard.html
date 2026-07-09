@@ -72,7 +72,7 @@
                         {% if has_commission %}
                             <th>Comisión</th>
                         {% endif %}
-                        <th style="width: 100px;">Cantidad</th>
+                        <th style="width: 100px; min-width: 100px;">Cantidad</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,13 +101,10 @@
                 <!-- OPCIONAL -->
                 <tfoot class="table-group-divider">
                     <tr class="custom-total-row fw-bold"> <td colspan="{% if has_commission %}3{% else %}2{% endif %}" class="text-end align-middle">
-                            Total Venta por Productos:
+                            Total Productos:
                         </td>
                         <td>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text border-0 bg-transparent text-info">$</span>
-                                <input type="text" class="form-control border-0 bg-transparent text-info fw-bold fs-5" id="total_productos_calc" value="0" readonly>
-                            </div>
+                            <span class="text-info fw-bold fs-5 text-nowrap">$ <span id="total_productos_calc">0</span></span>
                         </td>
                     </tr>
                 </tfoot>
