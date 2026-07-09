@@ -74,11 +74,9 @@
                     </td>
                     <td class="align-middle text-danger">${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}</td>
                     <td class="text-end">
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#viewRendicion{{ r[0] }}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editRendicion{{ r[0] }}" title="Editar Valores Declarados"><i class="bi bi-pencil"></i></button>
-                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteRendicion{{ r[0] }}" title="Eliminar Rendición"><i class="bi bi-trash"></i></button>
-                        </div>
+                            <button type="button" class="btn btn-info btn-sm text-white" data-bs-toggle="modal" data-bs-target="#viewRendicion{{ r[0] }}" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                            <button type="button" class="btn btn-primary btn-sm btn-edit-sm" data-bs-toggle="modal" data-bs-target="#editRendicion{{ r[0] }}" title="Editar Valores Declarados"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="btn btn-danger btn-sm btn-del-sm" data-bs-toggle="modal" data-bs-target="#deleteRendicion{{ r[0] }}" title="Eliminar Rendición"><i class="bi bi-trash"></i></button>
 
                         {{ rendicion_detail_modal(r, r[23], r[24], r[25]) }}
                         {{ edit_rendicion_modal(r, r[23], workers, modulos) }}
