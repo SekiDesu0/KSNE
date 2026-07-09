@@ -11,8 +11,8 @@ services:
       - PYTHONUNBUFFERED=1
       - TZ=America/Santiago
     volumes:
-      - /home/sekidesu/dockerVolumes/ksne/db:/app/db
-      - /home/sekidesu/dockerVolumes/ksne/static/cache:/app/static/cache
+      - ./db:/app/db
+      - ./static/cache:/app/static/cache
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:5000/"]
