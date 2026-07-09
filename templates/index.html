@@ -1,10 +1,51 @@
 {% extends "macros/base.html" %}
 
-{% block title %}Dashboad?{% endblock %}
+{% block title %}Inicio{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Poner algo aqui?</h2>
-{% endblock %}
+<section style="max-width: 1200px; margin: 4rem auto; padding: 2rem; text-align: center;">
+    <div class="badge" style="display: inline-flex; align-items: center; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 0.4rem 1rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; color: #6366f1; margin-bottom: 2rem; gap: 0.5rem;">
+        <span style="width: 6px; height: 6px; background: #6366f1; border-radius: 50%; box-shadow: 0 0 8px #6366f1;"></span>
+        Sistema de Rendiciones
+    </div>
+    <h1 style="font-family: var(--font-heading); font-size: 3.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 1.5rem;">
+        Automatiza tus <br><span style="background: linear-gradient(135deg, #6366f1, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Rendiciones Diarias</span>
+    </h1>
+    <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 650px; margin: 0 auto 3rem auto;">
+        Gestiona módulos de venta, comisiones de trabajadores, inventario, y genera reportes financieros completos en tiempo real.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-5 py-3" style="font-size: 1.1rem;">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Iniciar Sesión
+        </a>
+    </div>
+</section>
 
-{% block scripts %}
+<section style="max-width: 1200px; margin: 6rem auto; padding: 2rem;">
+    <div style="text-align: center; margin-bottom: 4rem;">
+        <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">Diseñado para Retail</h2>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0.5rem auto;">Todo lo que necesitas para gestionar módulos de alto rendimiento, rastrear pérdidas y pagar comisiones precisas.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+        <div style="background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 2.5rem; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
+            <h3 style="font-family: var(--font-heading); margin-bottom: 0.5rem; font-size: 1.3rem;">Reportes en Tiempo Real</h3>
+            <p style="color: var(--text-secondary); font-size: 0.95rem;">Genera informes de ventas, control IVA efectivo/tarjeta, comisiones y resúmenes de trabajadores al instante.</p>
+        </div>
+        <div style="background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 2.5rem; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">📦</div>
+            <h3 style="font-family: var(--font-heading); margin-bottom: 0.5rem; font-size: 1.3rem;">Control de Inventario</h3>
+            <p style="color: var(--text-secondary); font-size: 0.95rem;">Rastrea productos principales y complementos vinculados automáticamente al ingresar ventas.</p>
+        </div>
+        <div style="background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 2.5rem; text-align: center;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔒</div>
+            <h3 style="font-family: var(--font-heading); margin-bottom: 0.5rem; font-size: 1.3rem;">Robos y Mermas</h3>
+            <p style="color: var(--text-secondary); font-size: 0.95rem;">Registra incidentes por módulo para conciliar diferencias entre depósitos y conteos físicos.</p>
+        </div>
+    </div>
+</section>
+
+<footer style="border-top: 1px solid var(--border-color); padding: 3rem 2rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: 6rem;">
+    <p>&copy; 2026 KSNE — Key Sales & Net Earnings Settlement Systems.</p>
+</footer>
 {% endblock %}

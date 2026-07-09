@@ -4,37 +4,47 @@
 {% block title %}Inicio de sesión{% endblock %}
 
 {% block content %}
-    <div class="d-flex align-items-center justify-content-center vh-100">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center py-3">
-                    <h4 class="mb-0">Iniciar Sesión</h4>
-                </div>
-                <div class="card-body p-4">
-                    {{ flashed_messages() }}
-
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">RUT</label>
-                            <input type="text"
-                                class="form-control"
-                                name="rut"
-                                id="rutInput"
-                                placeholder="12.345.678-9"
-                                maxlength="12"
-                                required
-                                autofocus>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-                    </form>
-                </div>
-            </div>
+<div style="display: flex; align-items: center; justify-content: center; min-height: 80vh;">
+    <div style="width: 100%; max-width: 440px;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+            <h1 style="font-family: var(--font-heading); font-size: 2.5rem; font-weight: 800; letter-spacing: -0.05em;">
+                KSNE<span style="background: linear-gradient(135deg, #6366f1, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">.io</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Sistema de Rendiciones</p>
         </div>
+
+        <div style="background: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <h2 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center;">Iniciar Sesión</h2>
+
+            {{ flashed_messages() }}
+
+            <form method="POST">
+                <div style="margin-bottom: 1.25rem;">
+                    <label class="form-label">RUT</label>
+                    <input type="text"
+                        class="form-control"
+                        name="rut"
+                        id="rutInput"
+                        placeholder="12.345.678-9"
+                        maxlength="12"
+                        required
+                        autofocus>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-3" style="font-size: 1rem;">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Ingresar
+                </button>
+            </form>
+        </div>
+
+        <p style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 2rem;">
+            Key Sales & Net Earnings Settlement Systems
+        </p>
     </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

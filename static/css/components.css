@@ -1,43 +1,6 @@
-/* ============================================================
-   HOVER EFFECTS — theme-aware
-   ============================================================ */
-
-/* .hover-shadow: lift on hover with info-colored border
-   Uses --bs-info so the border matches the theme palette. */
-.hover-shadow {
-    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-}
-.hover-shadow:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 .5rem 1rem rgba(15, 23, 42, .15) !important;
-    border-color: var(--bs-info) !important;
-}
-
-/* .hover-card: tertiary background that blends with the page */
-.hover-card {
-    transition: transform .2s ease, box-shadow .2s ease;
-    background-color: var(--bs-tertiary-bg);
-}
-.hover-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 .5rem 1rem rgba(15, 23, 42, .12) !important;
-}
-
 .transition-all {
-    transition: all .3s ease-in-out;
+    transition: all 0.3s ease-in-out;
 }
-
-/* Dark mode gets a deeper shadow */
-[data-bs-theme="dark"] .hover-shadow:hover {
-    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .3) !important;
-}
-[data-bs-theme="dark"] .hover-card:hover {
-    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .25) !important;
-}
-
-/* ============================================================
-   BAGUETTE EASTER EGG
-   ============================================================ */
 
 @keyframes baguetteRoll {
     0%   { transform: rotate(0deg)   scale(1.2); }
