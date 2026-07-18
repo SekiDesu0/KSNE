@@ -5,6 +5,7 @@ from models.models import db
 from routes.auth_bp import auth_bp
 from routes.worker_bp import worker_bp
 from routes.admin_bp import admin_bp
+from routes.minimal_bp import minimal_bp
 
 app = Flask(__name__)
 app.secret_key = "super_secret_dev_key"
@@ -25,6 +26,7 @@ def add_header(response):
 app.register_blueprint(auth_bp)
 app.register_blueprint(worker_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(minimal_bp)
 
 if __name__ == '__main__':
     init_db()

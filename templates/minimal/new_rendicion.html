@@ -1,0 +1,286 @@
+{% extends "minimal/base.html" %}
+{% block title %}Nueva Rendición — KSNE{% endblock %}
+{% block content %}
+<div class="min-header">
+    <div>
+        <a href="{{ url_for('minimal.index') }}" style="font-size:0.8125rem;color:#888;">&larr; Volver al Historial</a>
+        <h2 style="margin-top:0.25rem;">Nueva Rendición de Caja</h2>
+    </div>
+    <div class="text-muted" style="font-size:0.8125rem;text-align:right;">
+        <div><strong>Módulo:</strong> <span class="badge badge-primary">{{ modulo_name }}</span></div>
+        <div><small>Zona: {{ zona_name }}</small></div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for cat, msg in messages %}
+<div class="flash flash-{{ cat }}">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form method="POST">
+    <div class="card">
+        <div class="card-header">Datos del Turno</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-3">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" name="fecha" value="{{ today }}" min="{{ today }}" required>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="form-group">
+                        <label>Entrada</label>
+                        <input type="time" name="hora_entrada" required>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="form-group">
+                        <label>Salida</label>
+                        <input type="time" name="hora_salida" required>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="form-group">
+                        <label>Acompañante (opcional)</label>
+                        <select name="companion_id" id="companion_select">
+                            <option value="">Sin acompañante</option>
+                            {% for w in otros_trabajadores %}
+                            <option value="{{ w[0] }}">{{ w[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="companion_times" style="display:none;">
+                <div class="row">
+                    <div class="col-2">
+                        <div class="form-group">
+                            <label>Entrada Acompañante</label>
+                            <input type="time" name="companion_hora_entrada">
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-group">
+                            <label>Salida Acompañante</label>
+                            <input type="time" name="companion_hora_salida">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Detalle de Productos Vendidos</div>
+        <div class="card-body p-0">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Precio</th>
+                            {% if has_commission %}<th>Comisión</th>{% endif %}
+                            <th style="width:100px;">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prod in productos %}
+                        <tr>
+                            <td class="align-middle">{{ prod[1] }}</td>
+                            <td class="align-middle text-muted">${{ "{:,.0f}".format(prod[2]).replace(',', '.') }}</td>
+                            {% if has_commission %}
+                            <td class="align-middle text-muted">${{ "{:,.0f}".format(prod[3]).replace(',', '.') }}</td>
+                            {% endif %}
+                            <td>
+                                <input type="number" class="prod-qty" name="qty_{{ prod[0] }}" min="0" placeholder="0" data-price="{{ prod[2] }}" style="width:5rem;">
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{% if has_commission %}4{% else %}3{% endif %}" class="empty-state">No hay productos configurados para esta zona.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="{% if has_commission %}3{% else %}2{% endif %}" class="text-end align-middle">Total Productos:</td>
+                            <td class="fw-bold text-info">$<span id="total_productos">0</span></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Resumen Financiero</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-4">
+                    <div class="form-group">
+                        <label>Débito ($)</label>
+                        <input type="text" class="sale-input money-input" name="venta_debito" id="venta_debito" inputmode="decimal">
+                    </div>
+                    <div class="form-group">
+                        <label>Nº Boletas Débito</label>
+                        <input type="number" name="boletas_debito" min="0" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        <label>Crédito ($)</label>
+                        <input type="text" class="sale-input money-input" name="venta_credito" id="venta_credito" inputmode="decimal">
+                    </div>
+                    <div class="form-group">
+                        <label>Nº Boletas Crédito</label>
+                        <input type="number" name="boletas_credito" min="0" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        <label>Mercado Pago ($)</label>
+                        <input type="text" class="sale-input money-input" name="venta_mp" id="venta_mp" inputmode="decimal">
+                    </div>
+                    <div class="form-group">
+                        <label>Nº Boletas MP</label>
+                        <input type="number" name="boletas_mp" min="0" placeholder="0">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        <label>Efectivo ($)</label>
+                        <input type="text" class="sale-input money-input" name="venta_efectivo" id="venta_efectivo" inputmode="decimal">
+                    </div>
+                    <div class="form-group">
+                        <label>Nº Boletas Efectivo</label>
+                        <input type="number" name="boletas_efectivo" min="0" placeholder="0">
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #2a2a2a;">
+                <div class="col-2">
+                    <div class="form-group">
+                        <label style="color:#22d3ee;font-weight:600;">Total Digital</label>
+                        <input type="text" id="total_digital" readonly value="$0">
+                    </div>
+                </div>
+                <div class="col-2">
+                    <div class="form-group">
+                        <label style="color:#4ade80;font-weight:600;">Total Ventas</label>
+                        <input type="text" id="total_general" readonly value="$0">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Gastos y Observaciones</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-4">
+                    <div class="form-group">
+                        <label style="color:#f87171;font-weight:600;">Monto de Gastos ($)</label>
+                        <input type="text" class="money-input" name="gastos" id="gastos" placeholder="0" inputmode="decimal">
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        <textarea name="observaciones" rows="2" placeholder="Si hubo gastos o necesitas reportar algo..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="discrepancy_warning" class="flash flash-danger" style="display:none;">
+        <span id="discrepancy_text"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block">Enviar Rendición Diaria</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    // Companion toggle
+    var sel = document.getElementById('companion_select');
+    var timesDiv = document.getElementById('companion_times');
+    if (sel && timesDiv) {
+        sel.addEventListener('change', function() {
+            timesDiv.style.display = this.value ? 'block' : 'none';
+        });
+    }
+
+    // Money input: strip dots, format on blur
+    function parseMoney(v) {
+        return parseInt((v || '0').replace(/\./g, '')) || 0;
+    }
+    function fmtMoney(n) {
+        return n.toLocaleString('es-CL');
+    }
+
+    var moneyInputs = document.querySelectorAll('.money-input');
+    moneyInputs.forEach(function(inp) {
+        inp.addEventListener('blur', function() {
+            var n = parseMoney(this.value);
+            if (n > 0) this.value = fmtMoney(n);
+        });
+        inp.addEventListener('focus', function() {
+            var n = parseMoney(this.value);
+            this.value = n > 0 ? n.toString() : '';
+        });
+    });
+
+    // Calculate totals
+    function calcTotals() {
+        var deb = parseMoney(document.getElementById('venta_debito').value);
+        var cred = parseMoney(document.getElementById('venta_credito').value);
+        var mp = parseMoney(document.getElementById('venta_mp').value);
+        var efect = parseMoney(document.getElementById('venta_efectivo').value);
+        var digital = deb + cred + mp;
+        var total = digital + efect;
+        document.getElementById('total_digital').value = '$' + fmtMoney(digital);
+        document.getElementById('total_general').value = '$' + fmtMoney(total);
+
+        // Calc productos total
+        var prodTotal = 0;
+        document.querySelectorAll('.prod-qty').forEach(function(q) {
+            var qty = parseInt(q.value) || 0;
+            var price = parseInt(q.dataset.price) || 0;
+            prodTotal += qty * price;
+        });
+        document.getElementById('total_productos').textContent = fmtMoney(prodTotal);
+
+        // Discrepancy warning
+        var warn = document.getElementById('discrepancy_warning');
+        var txt = document.getElementById('discrepancy_text');
+        if (total !== prodTotal) {
+            warn.style.display = 'block';
+            txt.textContent = 'Advertencia: El total de ventas ($' + fmtMoney(total) +
+                ') no coincide con el total de productos ($' + fmtMoney(prodTotal) + ').';
+        } else {
+            warn.style.display = 'none';
+        }
+    }
+
+    document.querySelectorAll('.sale-input, .prod-qty').forEach(function(el) {
+        el.addEventListener('input', calcTotals);
+    });
+    calcTotals();
+})();
+
+// Fill empty sale fields with "0" on submit
+document.querySelector('form').addEventListener('submit', function() {
+    document.querySelectorAll('.sale-input').forEach(function(inp) {
+        if (inp.value.trim() === '') inp.value = '0';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "minimal/base.html" %}
+{% block title %}Robos y Mermas — KSNE{% endblock %}
+{% block content %}
+<div class="min-header">
+    <h2>Historial de Robos y Mermas</h2>
+    <a href="{{ url_for('minimal.reportar_robo_merma') }}" class="btn btn-danger">+ Nuevo Reporte</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for cat, msg in messages %}
+<div class="flash flash-{{ cat }}">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th class="hide-sm">Módulo</th>
+                        <th>Producto</th>
+                        <th>Cant.</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reportes %}
+                    <tr>
+                        <td class="align-middle">{{ r[1] }}</td>
+                        <td class="align-middle hide-sm"><span class="badge badge-info">{{ r[2] }}</span></td>
+                        <td class="align-middle">{{ r[3] }}</td>
+                        <td class="align-middle fw-bold">{{ r[4] }}</td>
+                        <td class="align-middle">
+                            {% if r[5] == 'robo' %}
+                            <span class="badge badge-danger">Robo</span>
+                            {% else %}
+                            <span class="badge badge-warning">Merma</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">Aún no tienes robos o mermas registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

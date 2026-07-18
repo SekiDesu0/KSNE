@@ -1,0 +1,99 @@
+{% extends "minimal/base.html" %}
+{% block title %}Reportar Robos y Mermas — KSNE{% endblock %}
+{% block content %}
+<div class="min-header">
+    <div>
+        <a href="{{ url_for('minimal.robos_mermas') }}" style="font-size:0.8125rem;color:#888;">&larr; Volver al Historial</a>
+        <h2 style="margin-top:0.25rem;">Reportar Robos y Mermas</h2>
+    </div>
+    <div class="text-muted" style="font-size:0.8125rem;text-align:right;">
+        <div><strong>Módulo:</strong> <span class="badge badge-primary">{{ modulo_name }}</span></div>
+        <div><small>Zona: {{ zona_name }}</small></div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for cat, msg in messages %}
+<div class="flash flash-{{ cat }}">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form method="POST">
+    <div class="card">
+        <div class="card-header">Datos del Reporte</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-2">
+                    <div class="form-group">
+                        <label>Fecha del Incidente</label>
+                        <input type="date" name="fecha" value="{{ today }}" max="{{ today }}" required>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        <textarea name="observaciones" rows="1" placeholder="Detalles adicionales (opcional)"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Productos Robados o Perdidos</div>
+        <div class="card-body p-0">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Precio</th>
+                            <th style="width:100px;">Cantidad</th>
+                            <th style="width:140px;">Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prod in productos %}
+                        <tr>
+                            <td class="align-middle">{{ prod[1] }}</td>
+                            <td class="align-middle text-muted">${{ "{:,.0f}".format(prod[2]).replace(',', '.') }}</td>
+                            <td>
+                                <input type="number" class="rm-qty" name="qty_{{ prod[0] }}" min="0" placeholder="0" data-prod="{{ prod[0] }}" style="width:5rem;">
+                            </td>
+                            <td>
+                                <select class="rm-motivo" name="motivo_{{ prod[0] }}" data-prod="{{ prod[0] }}" disabled>
+                                    <option value="robo">Robo</option>
+                                    <option value="merma">Merma</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="empty-state">No hay productos configurados para esta zona.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-danger btn-block">Enviar Reporte</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.rm-qty').forEach(function(input) {
+    input.addEventListener('input', function() {
+        var prodId = this.dataset.prod;
+        var motivo = document.querySelector('.rm-motivo[data-prod="' + prodId + '"]');
+        if (motivo) {
+            motivo.disabled = parseInt(this.value) <= 0;
+        }
+    });
+});
+</script>
+{% endblock %}

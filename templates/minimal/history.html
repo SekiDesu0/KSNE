@@ -1,0 +1,217 @@
+{% extends "minimal/base.html" %}
+{% block title %}Mis Rendiciones — KSNE{% endblock %}
+{% block content %}
+<div class="min-header">
+    <h2>Mis Rendiciones</h2>
+    <a href="{{ url_for('minimal.new_rendicion') }}" class="btn btn-success">+ Nueva Rendición</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for cat, msg in messages %}
+<div class="flash flash-{{ cat }}">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<style>
+.detail-row { display: none; }
+.detail-row.open { display: table-row; }
+.detail-cell { padding: 0.75rem 0.625rem !important; background: #131316; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-section { margin-bottom: 0.75rem; background: #1a1a1e; border-radius: 0.375rem; padding: 0.75rem; }
+.detail-section:last-child { margin-bottom: 0; }
+.detail-section h4 { font-size: 0.75rem; text-transform: uppercase; color: #60a5fa; margin-bottom: 0.375rem; letter-spacing: 0.05em; }
+.detail-section table { font-size: 0.8125rem; }
+.detail-section td, .detail-section th { padding: 0.25rem 0.5rem; }
+.detail-section table tr:nth-child(even) td { background: #1e1e22; }
+.detail-section table th { background: #22222a; }
+.toggle-btn { cursor: pointer; font-size: 0.8125rem; color: #4a9eff; background: none; border: none; padding: 0; font-family: inherit; }
+.toggle-btn:hover { text-decoration: underline; }
+.p-hide { display: none; }
+.p-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.p-controls label { font-size: 0.8125rem; color: #888; }
+.p-controls select { width: auto; padding: 0.25rem 0.5rem; font-size: 0.8125rem; }
+.p-nav { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem; }
+.p-nav span { font-size: 0.8125rem; color: #888; }
+.p-nav .btn { min-width: 5rem; }
+</style>
+
+<div class="p-controls">
+    <label>Mostrar</label>
+    <select id="perPageSelect">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="0">Todas</option>
+    </select>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Módulo</th>
+                        <th class="hide-sm">Rol</th>
+                        <th class="hide-sm">Gastos</th>
+                        <th>Total</th>
+                        <th style="width:60px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if rendiciones %}
+                    {% for r in rendiciones %}
+                    <tr class="p-row" data-idx="{{ loop.index0 }}">
+                        <td class="align-middle">{{ r[1] }}</td>
+                        <td class="align-middle"><span class="badge badge-info">{{ r[3] }}</span></td>
+                        <td class="align-middle hide-sm">
+                            {% if r[26] == 'Titular' %}
+                            <span class="badge badge-primary">Titular</span>
+                            {% else %}
+                            <span class="badge badge-secondary">Acompañante</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-danger hide-sm">${{ "{:,.0f}".format(r[8] or 0).replace(',', '.') }}</td>
+                        <td class="align-middle fw-bold text-success">${{ "{:,.0f}".format((r[4] or 0) + (r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}</td>
+                        <td class="align-middle">
+                            <button class="toggle-btn" data-target="detail-{{ r[0] }}">+ Ver</button>
+                        </td>
+                    </tr>
+                    <tr id="detail-{{ r[0] }}" class="detail-row p-row" data-idx="{{ loop.index0 }}">
+                        <td colspan="6" class="detail-cell" style="padding:0.5rem 0.375rem !important;">
+                            {% set t = times[r[0]] %}
+                            <div class="detail-grid">
+                                <div class="detail-section">
+                                    <h4>Horario y Compañero</h4>
+                                    <table>
+                                        <tr><td>Entrada</td><td class="fw-bold">{{ t[0] }}</td></tr>
+                                        <tr><td>Salida</td><td class="fw-bold">{{ t[1] }}</td></tr>
+                                        {% if r[10] %}
+                                        <tr><td>Compañero</td><td class="fw-bold">{{ r[10] }}</td></tr>
+                                        <tr><td>Entrada Comp.</td><td>{{ t[2] if t[2] else '-' }}</td></tr>
+                                        <tr><td>Salida Comp.</td><td>{{ t[3] if t[3] else '-' }}</td></tr>
+                                        {% endif %}
+                                        <tr><td>Rol</td><td><span class="badge {% if r[26] == 'Titular' %}badge-primary{% else %}badge-secondary{% endif %}">{{ r[26] }}</span></td></tr>
+                                    </table>
+                                    {% if r[9] %}
+                                    <h4 style="margin-top:0.75rem;">Observaciones</h4>
+                                    <p style="font-size:0.8125rem;color:#aaa;">{{ r[9] }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Resumen de Ventas</h4>
+                                    <table>
+                                        <tr><td>Débito</td><td>${{ "{:,.0f}".format(r[4] or 0).replace(',', '.') }}</td><td class="text-muted">({{ r[19] or 0 }} boletas)</td></tr>
+                                        <tr><td>Crédito</td><td>${{ "{:,.0f}".format(r[5] or 0).replace(',', '.') }}</td><td class="text-muted">({{ r[20] or 0 }} boletas)</td></tr>
+                                        <tr><td>Mercado Pago</td><td>${{ "{:,.0f}".format(r[6] or 0).replace(',', '.') }}</td><td class="text-muted">({{ r[21] or 0 }} boletas)</td></tr>
+                                        <tr><td>Efectivo</td><td>${{ "{:,.0f}".format(r[7] or 0).replace(',', '.') }}</td><td class="text-muted">({{ r[22] or 0 }} boletas)</td></tr>
+                                        <tr style="border-top:1px solid #333;"><td class="fw-bold">Total</td><td class="fw-bold text-success">${{ "{:,.0f}".format((r[4] or 0) + (r[5] or 0) + (r[6] or 0) + (r[7] or 0)).replace(',', '.') }}</td><td></td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                            {% if r[23] %}
+                            <div class="detail-section" style="margin-top:0.75rem;">
+                                <h4>Productos Vendidos</h4>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Cant.</th>
+                                            <th>P. Unit.</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in r[23] %}
+                                        <tr>
+                                            <td>{{ item[0] }}</td>
+                                            <td>{{ item[1] }}</td>
+                                            <td>${{ "{:,.0f}".format(item[2]).replace(',', '.') }}</td>
+                                            <td>${{ "{:,.0f}".format(item[4]).replace(',', '.') }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-state">Aún no tienes rendiciones registradas.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="p-nav">
+    <button id="prevPage" class="btn btn-sm btn-primary">Anterior</button>
+    <span id="pageInfo">Página 1 de 1</span>
+    <button id="nextPage" class="btn btn-sm btn-primary">Siguiente</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var perPage = document.getElementById('perPageSelect');
+    var prevBtn = document.getElementById('prevPage');
+    var nextBtn = document.getElementById('nextPage');
+    var pageInfo = document.getElementById('pageInfo');
+    var rows = document.querySelectorAll('.p-row');
+    var totalGroups = 0;
+    var seen = {};
+    rows.forEach(function(r) {
+        var idx = r.dataset.idx;
+        if (idx !== undefined && !seen[idx]) { seen[idx] = true; totalGroups++; }
+    });
+    var page = 1;
+
+    function update() {
+        document.querySelectorAll('.detail-row.open').forEach(function(r) {
+            r.classList.remove('open');
+            var btn = document.querySelector('[data-target="' + r.id + '"]');
+            if (btn) btn.textContent = '+ Ver';
+        });
+        var pp = parseInt(perPage.value);
+        var n = pp === 0 ? totalGroups : pp;
+        var pages = Math.max(1, Math.ceil(totalGroups / n));
+        if (page > pages) page = pages;
+
+        rows.forEach(function(r) {
+            var idx = parseInt(r.dataset.idx);
+            var show = pp === 0 || (idx >= (page - 1) * n && idx < page * n);
+            r.classList.toggle('p-hide', !show);
+        });
+
+        pageInfo.textContent = 'Página ' + page + ' de ' + pages;
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= pages;
+    }
+
+    perPage.addEventListener('change', function() { page = 1; update(); });
+    prevBtn.addEventListener('click', function() { if (page > 1) { page--; update(); } });
+    nextBtn.addEventListener('click', function() { page++; update(); });
+    update();
+
+    // toggle detail rows
+    document.querySelectorAll('.toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = document.getElementById(this.dataset.target);
+            if (row) {
+                row.classList.toggle('open');
+                this.textContent = row.classList.contains('open') ? '- Ocultar' : '+ Ver';
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}
